@@ -1,0 +1,24 @@
+{
+  "name": "Flokio - Smart Broiler Recording Ledger",
+  "short_name": "Flokio",
+  "description": "Aplikasi pencatatan operasional harian peternakan ayam broiler pengganti lembar kertas fisik.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F8F9FA",
+  "theme_color": "#3B5166",
+  "icons": [
+    {
+      "src": "./assets/icons/flokio_mascot.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icons/flokio_mascot.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

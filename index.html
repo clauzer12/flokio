@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#3B5166">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Flokio">
+  <title>Flokio — Smart Broiler Recording Ledger</title>
+
+  <!-- PWA Manifest & Favicon -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/jpeg" href="./assets/icons/flokio_mascot.jpg">
+  <link rel="apple-touch-icon" href="./assets/icons/flokio_mascot.jpg">
+
+  <!-- Tailwind CSS & Custom Stylesheet -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="bg-[#F8F9FA] min-h-screen flex flex-col items-center justify-center p-0 md:p-4 text-slate-800">
+
+  <!-- ================= APP CONTAINER SHELL ================= -->
+  <main id="appShell" class="w-full max-w-md md:max-w-5xl mx-auto flex-1 flex flex-col md:flex-row bg-white shadow-xl min-h-screen md:min-h-[820px] md:rounded-3xl border border-slate-200/80 overflow-hidden relative">
+
+    <!-- ================= SIDEBAR TABLET (HANYA MUNCUL DI TABLET) ================= -->
+    <aside id="sidebar" class="hidden w-64 bg-[#F8F9FA] border-r border-slate-200 flex-col justify-between shrink-0 p-4">
+      <div class="space-y-4">
+        <div class="flex items-center gap-2.5">
+          <img src="./assets/icons/flokio_mascot.jpg" alt="Flokio Mascot" class="w-9 h-9 rounded-xl object-cover shadow-xs border border-slate-200/80">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 leading-tight">Flokio Ledger</h2>
+            <p class="text-[10px] text-slate-500" id="sidebarRoleTag">Mode: Penjaga Kandang</p>
+          </div>
+        </div>
+
+        <!-- Quick Pen Dropdown -->
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+          <span class="text-[10px] text-slate-400 block mb-1">Kandang Aktif</span>
+          <select id="selectKandangTablet" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 focus:outline-none">
+            <option value="k1">Kandang 01 (Flok #4 - Umur 16)</option>
+            <option value="k2" id="optKandang2Tablet" disabled>Kandang 02 (Persiapan)</option>
+          </select>
+        </div>
+
+        <!-- Tablet Sidebar Nav Links -->
+        <nav class="space-y-1 text-xs">
+          <button onclick="navigateTo('beranda')" id="sideNavBeranda" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white text-[#3B5166] font-bold shadow-xs border border-slate-200 text-left transition-all">
+            <span>🏠</span> <span>Beranda</span>
+          </button>
+          <button onclick="navigateTo('kandang')" id="sideNavKandang" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-white font-medium text-left transition-all">
+            <span>🐔</span> <span>Daftar Kandang</span>
+          </button>
+          <button onclick="navigateTo('rekap')" id="sideNavRekap" class="hidden w-full items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-white font-medium text-left transition-all">
+            <span>📊</span> <span>Lembar Rekap Kertas</span>
+          </button>
+          <button onclick="navigateTo('akun')" id="sideNavAkun" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-white font-medium text-left transition-all">
+            <span>⚙️</span> <span>Akun & PIN</span>
+          </button>
+
+          <!-- Menu Owner Tambahan di Sidebar (Eksklusif Owner) -->
+          <div id="sideOwnerGroup" class="hidden pt-3 border-t border-slate-200 space-y-1">
+            <span class="text-[10px] font-bold tracking-wider uppercase text-slate-400 px-3 block mb-1">Wewenang Owner</span>
+            <button onclick="openModalChickin()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 font-bold border border-emerald-200/80 text-left transition-colors">
+              <span>🐣</span> <span>Mulai Chick-in Baru</span>
+            </button>
+            <button onclick="openModalTambahKandang()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-white font-medium text-left transition-colors">
+              <span>🏢</span> <span>Tambah Master Gedung</span>
+            </button>
+            <button onclick="openModalPanen()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-white font-medium text-left transition-colors">
+              <span>⚖️</span> <span>Pencatatan Panen (IP)</span>
+            </button>
+          </div>
+        </nav>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200 text-xs flex items-center justify-between">
+        <div>
+          <p class="font-bold text-slate-800" id="sidebarUserLabel">Budi Santoso</p>
+          <p class="text-[10px] text-slate-400" id="sidebarSubLabel">Operator Kandang 01</p>
+        </div>
+        <button onclick="handleLogout()" class="text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg font-semibold transition-colors" title="Keluar ke Layar Login">
+          Keluar
+        </button>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT VIEWPORT ================= -->
+    <div class="flex-1 flex flex-col overflow-y-auto">
+
+      <!-- TOP APP HEADER (SAAT DALAM APLIKASI) -->
+      <header id="mainTopHeader" class="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-900" id="topHeaderBadge">👷 Budi (Penjaga)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="topBtnLaporWA" onclick="previewWA()" class="text-xs font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1 active:scale-95 transition-all">
+            <span>📲</span> Lapor WA
+          </button>
+          <button onclick="handleLogout()" class="text-xs text-slate-400 hover:text-rose-600 px-2 py-1 rounded-lg transition-colors font-medium" title="Keluar / Ganti Akun">
+            Keluar
+          </button>
+        </div>
+      </header>
+
+      <!-- ========================================================================= -->
+      <!-- SCREEN 0: LAYAR LOGIN TERPADU (GATEWAY UTAMA)                             -->
+      <!-- ========================================================================= -->
+      <section id="screenLogin" class="screen-view p-5 flex-1 flex flex-col justify-center max-w-sm mx-auto w-full fade-in">
+        <div class="text-center mb-6">
+          <div class="w-20 h-20 mx-auto mb-3 relative group">
+            <img src="./assets/icons/flokio_mascot.jpg" alt="Flokio Mascot" class="w-20 h-20 rounded-3xl object-cover shadow-lg border-2 border-white ring-4 ring-slate-100 transition-transform group-hover:scale-105">
+          </div>
+          <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Flokio</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Smart Broiler Recording & Ledger</p>
+        </div>
+
+        <div class="bg-slate-100 p-1 rounded-2xl flex text-xs mb-4">
+          <button id="tabLoginKandang" onclick="switchLoginTab('kandang')" class="flex-1 py-2 font-bold rounded-xl bg-white text-slate-900 shadow-xs transition-all flex items-center justify-center gap-1.5">
+            <span>👷</span> Anak Kandang
+          </button>
+          <button id="tabLoginOwner" onclick="switchLoginTab('owner')" class="flex-1 py-2 font-medium rounded-xl text-slate-500 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5">
+            <span>👑</span> Owner
+          </button>
+        </div>
+
+        <!-- FORM LOGIN ANAK KANDANG -->
+        <div id="formLoginKandang" class="space-y-3.5">
+          <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Pilih Kandang Penugasan</label>
+              <select id="loginKandangSelect" class="w-full h-10 bg-white border border-slate-200 rounded-xl px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166] cursor-pointer">
+                <option value="k1">🏢 Kandang 01 (Flok #4 • Closed House)</option>
+                <option value="k2">🏢 Kandang 02 (Masa Persiapan / Kosong)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Nama Operator / Penjaga</label>
+              <input type="text" id="loginOperatorNama" value="Budi Santoso" class="w-full h-10 bg-white border border-slate-200 rounded-xl px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">No. WhatsApp Aktif Penjaga</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-xs text-slate-400">📱</span>
+                <input type="tel" id="loginOperatorWA" value="081234567890" placeholder="08xxxxxxxxxx" class="w-full h-10 bg-white border border-slate-200 rounded-xl pl-9 pr-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Nomor ini yang dihubungi Owner saat koordinasi.</p>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="block text-[11px] font-bold text-slate-700">PIN Masuk Cepat (4-Digit)</label>
+                <span class="text-[10px] text-slate-400 font-mono">Demo: 1234</span>
+              </div>
+              <input type="password" id="loginPinKandang" maxlength="4" placeholder="••••" value="1234" class="w-full h-11 bg-white border border-slate-200 rounded-xl text-center font-bold text-xl tracking-[0.6em] text-slate-900 focus:outline-none focus:border-[#3B5166] tabular-nums">
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-600 px-1">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked class="w-4 h-4 rounded text-[#3B5166] border-slate-300">
+              <span class="text-[11px]">Ingat saya di HP ini</span>
+            </label>
+            <span class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Sesi Offline Siap</span>
+          </div>
+
+          <button type="button" onclick="submitLogin('kandang')" class="w-full py-3 rounded-xl font-bold text-xs text-white shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 bg-gradient-navy">
+            <span>Masuk ke Lembar Kerja</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <!-- FORM LOGIN OWNER -->
+        <div id="formLoginOwner" class="hidden space-y-3.5">
+          <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Email / No. WhatsApp Pemilik</label>
+              <input type="text" id="loginOwnerUser" value="haji.rahmat@flokio.id" class="w-full h-10 bg-white border border-slate-200 rounded-xl px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="block text-[11px] font-bold text-slate-700">PIN / Kata Sandi Master</label>
+                <span class="text-[10px] text-slate-400 font-mono">Demo: 8888</span>
+              </div>
+              <input type="password" id="loginOwnerPass" maxlength="8" placeholder="••••" value="8888" class="w-full h-11 bg-white border border-slate-200 rounded-xl text-center font-bold text-xl tracking-[0.5em] text-slate-900 focus:outline-none focus:border-[#3B5166] tabular-nums">
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-600 px-1">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked class="w-4 h-4 rounded text-[#3B5166] border-slate-300">
+              <span class="text-[11px]">Ingat sesi ini</span>
+            </label>
+            <a href="javascript:void(0)" onclick="alert('Demo PIN Owner: 8888')" class="text-[11px] font-semibold text-[#3B5166] hover:underline">Lupa PIN?</a>
+          </div>
+
+          <button type="button" onclick="submitLogin('owner')" class="w-full py-3 rounded-xl font-bold text-xs text-white shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 bg-gradient-navy">
+            <span>Masuk ke Dashboard Owner</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <!-- AKSES CEPAT UJI COBA DEMO -->
+        <div class="pt-5 pb-2 text-center border-t border-slate-100 space-y-2 mt-4">
+          <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">⚡ Akses Cepat Uji Coba:</span>
+          <div class="grid grid-cols-2 gap-2 text-left">
+            <button type="button" onclick="quickLoginDemo('kandang')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all">
+              <span class="text-xs font-bold text-slate-800 block">👷 Budi</span>
+              <span class="text-[10px] text-slate-500">Penjaga (PIN: 1234)</span>
+            </button>
+            <button type="button" onclick="quickLoginDemo('owner')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all">
+              <span class="text-xs font-bold text-slate-800 block">👑 Pak Haji</span>
+              <span class="text-[10px] text-slate-500">Owner (PIN: 8888)</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- SCREEN 1: BERANDA (HOME / DAILY LOG & AUDIT)                              -->
+      <!-- ========================================================================= -->
+      <section id="screenBeranda" class="screen-view p-4 space-y-4 flex-1 hidden fade-in">
+        
+        <!-- KARTU FLOK AKTIF (MODE OWNER) -->
+        <div id="cardFlokOwnerActive" class="hidden rounded-2xl p-4 text-white shadow-md relative overflow-hidden bg-gradient-navy">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-extrabold text-base tracking-tight">Kandang 01</h3>
+                <span class="text-[10px] bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full backdrop-blur-xs">Flok #4</span>
+              </div>
+              <p class="text-xs text-slate-200 mt-0.5">Closed House • DOC 5 Okt 2024</p>
+            </div>
+            <span class="text-xs font-bold bg-white text-[#3B5166] px-2.5 py-1 rounded-xl shadow-xs">Hari ke-16</span>
+          </div>
+          <div class="grid grid-cols-4 gap-2 text-center text-xs">
+            <div class="bg-white/10 rounded-xl p-2 backdrop-blur-xs">
+              <span class="text-[10px] text-slate-200 block">Deplesi</span>
+              <span class="font-extrabold text-sm text-white">4.3%</span>
+            </div>
+            <div class="bg-white/10 rounded-xl p-2 backdrop-blur-xs">
+              <span class="text-[10px] text-slate-200 block">Sisa Ayam</span>
+              <span class="font-extrabold text-sm text-white">4.205</span>
+            </div>
+            <div class="bg-white/10 rounded-xl p-2 backdrop-blur-xs">
+              <span class="text-[10px] text-slate-200 block">FCR</span>
+              <span class="font-extrabold text-sm text-emerald-300">1.08</span>
+            </div>
+            <div class="bg-white/10 rounded-xl p-2 backdrop-blur-xs">
+              <span class="text-[10px] text-slate-200 block">Est. IP</span>
+              <span class="font-extrabold text-sm text-sky-200">388</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- KARTU FLOK AKTIF (MODE ANAK KANDANG) -->
+        <div id="cardFlokKandangActive" class="rounded-2xl p-4 text-white shadow-md relative overflow-hidden bg-gradient-navy">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="font-extrabold text-base tracking-tight">Kandang 01</h3>
+                <span class="text-[10px] bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full">Flok #4</span>
+              </div>
+              <p class="text-xs text-slate-200 mt-0.5">Penjaga Bertugas: <strong class="text-white" id="lblWorkerShift">Budi Santoso</strong></p>
+            </div>
+            <span class="text-xs font-bold bg-white text-[#3B5166] px-2.5 py-1 rounded-xl shadow-xs">Hari ke-16</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-center text-xs">
+            <div class="bg-white/10 rounded-xl p-2.5 backdrop-blur-xs">
+              <span class="text-[10px] text-slate-200 block">Kematian Hari Ini</span>
+              <span class="font-extrabold text-base text-white" id="badgeMatiHariIni">6 Ekor</span>
+            </div>
+            <div class="bg-white/10 rounded-xl p-2.5 backdrop-blur-xs">
+              <span class="text-[10px] text-slate-200 block">Pakan Digunakan</span>
+              <span class="font-extrabold text-base text-amber-200" id="badgePakanHariIni">350 Kg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK NAV TO LEMBAR REKAP (HANYA UNTUK OWNER) -->
+        <div id="btnNavRekapOwnerOnly" onclick="navigateTo('rekap')" class="hidden bg-white border border-slate-200/80 rounded-2xl p-3 items-center justify-between cursor-pointer hover:bg-slate-50 shadow-xs transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center font-bold text-base">📊</div>
+            <div>
+              <h5 class="text-xs font-bold text-slate-800">Lembar Rekapitulasi Flok (Audit Kertas)</h5>
+              <p class="text-[11px] text-slate-500">Buka tabel lengkap 10 kolom fisik flok berjalan</p>
+            </div>
+          </div>
+          <span class="text-slate-400 text-sm font-bold">›</span>
+        </div>
+
+        <!-- KARTU STATUS SUDAH DISIMPAN (UNTUK ANAK KANDANG) -->
+        <div id="cardCatatanSaved" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">✓</span>
+              <div>
+                <h4 class="text-xs font-bold text-emerald-950">Catatan H-16 Sudah Disimpan</h4>
+                <p class="text-[10px] text-emerald-700">Tersimpan di IndexedDB • Siap kirim WA</p>
+              </div>
+            </div>
+            <span class="text-[10px] bg-white text-emerald-800 font-bold px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">Tersimpan</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 bg-white/90 p-2.5 rounded-xl border border-emerald-200/60 text-xs">
+            <div>
+              <span class="text-[10px] text-slate-400 block">Kematian:</span>
+              <span class="font-bold text-slate-900" id="savedMatiSummary">6 Ekor</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-slate-400 block">Pakan Digunakan:</span>
+              <span class="font-bold text-slate-900" id="savedPakanSummary">350 Kg (B11A)</span>
+            </div>
+          </div>
+          <div class="bg-white/90 p-2.5 rounded-xl border border-emerald-200/60 text-xs">
+            <span class="text-[10px] text-slate-400 block font-semibold mb-0.5">Catatan Tersimpan:</span>
+            <p class="text-[11px] text-slate-700 italic" id="savedCatatanSummary">"Kondisi sekam kering, ayam lincah, suhu exhaust fan stabil 28°C."</p>
+          </div>
+          <div class="pt-1 flex gap-2">
+            <button onclick="unlockEditForm()" class="flex-1 py-2.5 bg-white hover:bg-slate-50 border border-emerald-300 text-emerald-950 font-bold text-xs rounded-xl shadow-2xs flex items-center justify-center gap-1.5 transition-colors">
+              <span>✏️</span> Edit / Perbaiki Catatan Hari Ini
+            </button>
+            <button onclick="previewWA()" class="px-3.5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-colors">
+              📲 Lapor WA
+            </button>
+          </div>
+        </div>
+
+        <!-- FORM INPUT HARIAN (HANYA AKTIF UNTUK ANAK KANDANG) -->
+        <div id="sectionFormInput" class="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div>
+              <h4 class="text-xs sm:text-sm font-bold text-slate-900" id="lblUmurInput">Input Harian: Hari ke-16</h4>
+              <div class="flex items-center gap-1.5 mt-1">
+                <span class="text-[11px] text-slate-400 font-medium">Tanggal Data:</span>
+                <input type="date" id="inputTanggalRecord" value="2024-10-21" class="text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded px-2 py-0.5 focus:outline-none">
+              </div>
+            </div>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-100 text-sky-800" id="badgeFase">
+              Fase Grower
+            </span>
+          </div>
+
+          <!-- Stepper Kematian -->
+          <div>
+            <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
+              <span>Kematian / Afkir Hari Ini</span>
+              <span class="text-slate-400">Ekor</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="adjustMati(-1)" class="w-11 h-11 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl active:scale-95 text-base">-</button>
+              <input type="number" id="inputMati" value="6" oninput="recalc()" class="flex-1 h-11 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-slate-900 text-lg focus:bg-white focus:outline-none focus:border-[#3B5166] tabular-nums">
+              <button onclick="adjustMati(1)" class="w-11 h-11 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl active:scale-95 text-base">+</button>
+            </div>
+          </div>
+
+          <!-- Pakan Pakai -->
+          <div class="pt-2 border-t border-slate-100">
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-xs font-semibold text-slate-700">Pakan Pakai</span>
+              <div class="inline-flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px]">
+                <button id="btnKg" onclick="setUnit('kg')" class="px-2.5 py-0.5 rounded font-bold bg-white text-slate-800 shadow-xs">Kg</button>
+                <button id="btnSak" onclick="setUnit('sak')" class="px-2.5 py-0.5 rounded text-slate-500">Sak</button>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="inputJenisPakan" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-medium text-slate-800 focus:outline-none">
+                <option>B11A (Grower)</option>
+                <option>BP-1 (Starter)</option>
+                <option>B12 (Finisher)</option>
+              </select>
+              <input type="number" id="inputPakan" value="350" oninput="recalc()" class="h-10 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-slate-900 text-sm focus:outline-none tabular-nums">
+            </div>
+            <div class="flex justify-between text-[11px] text-slate-500 pt-1">
+              <span>Feed Intake (FI):</span>
+              <span class="font-bold text-slate-800 tabular-nums" id="dispFI">83.2 g/ekor</span>
+            </div>
+          </div>
+
+          <!-- Tambah Stok & Sampling BW -->
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+            <div>
+              <span class="text-slate-600 block mb-1">Stok Masuk (Kg)</span>
+              <input type="number" id="inputPakanMasuk" placeholder="0" class="w-full h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs text-slate-800 focus:outline-none">
+            </div>
+            <div>
+              <span class="text-slate-600 block mb-1">Sampling BW (g)</span>
+              <input type="number" id="inputBW" placeholder="misal 890" class="w-full h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs text-slate-800 focus:outline-none">
+            </div>
+          </div>
+
+          <!-- Catatan Tambahan Anak Kandang -->
+          <div class="pt-2 border-t border-slate-100 text-xs">
+            <label class="flex justify-between items-center text-slate-700 font-semibold mb-1">
+              <span>Catatan Lapangan / Kondisi Ayam</span>
+              <span class="text-[10px] text-slate-400 font-normal">Opsional</span>
+            </label>
+            <textarea id="inputCatatanHarian" rows="2" placeholder="Tulis kondisi sekam, suhu, blower, obat/vitamin..." oninput="updateCatatanLive(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#3B5166] resize-none leading-relaxed">Kondisi sekam kering, ayam lincah, suhu exhaust fan stabil 28°C.</textarea>
+          </div>
+
+          <button onclick="simpanLog()" class="w-full py-3 rounded-xl font-bold text-xs text-white shadow-md active:scale-98 transition-all bg-gradient-navy">
+            💾 Simpan Catatan Hari Ini
+          </button>
+        </div>
+
+        <!-- PANEL AUDIT OWNER (HANYA AKTIF UNTUK OWNER - READ ONLY) -->
+        <div id="sectionOwnerAudit" class="hidden bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div>
+              <h4 class="text-xs sm:text-sm font-bold text-slate-900">Laporan Masuk H-16 (Hari Ini)</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">Penjaga: <strong id="ownerViewOperatorName" class="text-slate-800">Budi Santoso</strong> (<span id="ownerViewOperatorWA" class="font-mono text-slate-600">081234567890</span>) • 18:30 WIB</p>
+            </div>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+              Terverifikasi
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-xl">
+              <span class="text-[10px] text-slate-400 block">Kematian Hari Ini</span>
+              <span class="text-base font-bold text-slate-900" id="ownerViewMati">6 Ekor</span>
+              <span class="text-[10px] text-emerald-700 block mt-0.5">● Mortalitas 0.14% (Aman)</span>
+            </div>
+            <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-xl">
+              <span class="text-[10px] text-slate-400 block">Pakan Digunakan</span>
+              <span class="text-base font-bold text-slate-900" id="ownerViewPakan">350 Kg (B11A)</span>
+              <span class="text-[10px] text-slate-500 block mt-0.5">Setara 7 Sak (@50kg)</span>
+            </div>
+            <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-xl">
+              <span class="text-[10px] text-slate-400 block">Feed Intake</span>
+              <span class="text-base font-bold text-slate-900" id="ownerViewFI">83.2 g/ekor</span>
+              <span class="text-[10px] text-emerald-700 block mt-0.5">● Sesuai Kurva Standar</span>
+            </div>
+            <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-xl">
+              <span class="text-[10px] text-slate-400 block">Sisa Stok Gudang</span>
+              <span class="text-base font-bold text-amber-700">800 Kg</span>
+              <span class="text-[10px] text-slate-500 block mt-0.5">16 Sak (Aman 2 hari)</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
+            <span class="text-[10px] text-slate-400 block font-semibold mb-0.5">Catatan Anak Kandang:</span>
+            <p class="text-[11px] text-slate-700 italic" id="ownerViewCatatan">"Kondisi sekam kering, ayam lincah, suhu exhaust fan stabil 28°C."</p>
+          </div>
+
+          <div class="pt-1">
+            <a id="btnOwnerChatWA" href="https://wa.me/6281234567890?text=Halo%20Penjaga,%20saya%20sudah%20cek%20laporan%20harian%20Kandang%2001%20H-16.%20Kondisi%20aman%20dan%20terkendali." target="_blank" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-xs transition-colors" title="Buka WhatsApp ke nomor penjaga yang bertugas di Kandang 01">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+              <span>💬 Chat WhatsApp Penjaga</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- SCREEN 2: DAFTAR KANDANG                                                  -->
+      <!-- ========================================================================= -->
+      <section id="screenKandang" class="screen-view p-4 space-y-4 flex-1 hidden fade-in">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Daftar Kelolaan Kandang</h3>
+            <p class="text-[11px] text-slate-500">Total: 1 Kandang Aktif</p>
+          </div>
+          <button id="btnTambahKandangInScreen" onclick="openModalTambahKandang()" class="hidden text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1.5 rounded-xl">
+            🏢 + Gedung Baru
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="text-sm font-bold text-slate-900">Kandang 01</h4>
+                  <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Flok #4 Aktif</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">Closed House • Kapasitas: 5.000 ekor</p>
+              </div>
+              <span class="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">Hari ke-16</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-center text-xs">
+              <div>
+                <span class="text-[10px] text-slate-400 block">Populasi</span>
+                <span class="font-bold text-slate-800">4.205 ekor</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">FCR Terkini</span>
+                <span class="font-bold text-emerald-700">1.08</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block">Penjaga</span>
+                <span class="font-bold text-slate-800">Budi</span>
+              </div>
+            </div>
+
+            <button onclick="navigateTo('beranda')" class="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5">
+              <span>📝</span> Input Catatan Harian (Kandang 01)
+            </button>
+          </div>
+
+          <div class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-2">
+            <span class="text-2xl block">🏢</span>
+            <h4 class="text-xs font-bold text-slate-700">Kandang 02 (Persiapan Flok Baru)</h4>
+            <p class="text-[11px] text-slate-500 max-w-xs mx-auto">Kandang dalam pembersihan & disinfeksi pasca panen flok sebelumnya.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- SCREEN 3: LEMBAR REKAP KERTAS (10 KOLOM FISIK - EKSKLUSIF OWNER)          -->
+      <!-- ========================================================================= -->
+      <section id="screenRekap" class="screen-view p-4 space-y-4 flex-1 hidden fade-in">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Lembar Rekapitulasi Flok</h3>
+            <p class="text-[11px] text-slate-500">Kandang 01 • Flok #4 (Audit Kertas Fisik 10 Kolom)</p>
+          </div>
+        </div>
+
+        <!-- Weekly Tabs M1 - M5 -->
+        <div class="flex gap-1.5 overflow-x-auto pb-1 text-xs">
+          <button id="tabM1" onclick="switchWeek(1)" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 bg-white border border-slate-200">M1 (H1-7)</button>
+          <button id="tabM2" onclick="switchWeek(2)" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#3B5166] text-white shadow-xs">M2 (H8-14)</button>
+          <button id="tabM3" onclick="switchWeek(3)" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 bg-white border border-slate-200">M3 (H15-21)</button>
+          <button id="tabM4" onclick="switchWeek(4)" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 bg-white border border-slate-200">M4 (H22-28)</button>
+          <button id="tabM5" onclick="switchWeek(5)" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 bg-white border border-slate-200">M5 (H29-35)</button>
+        </div>
+
+        <!-- TABEL REKAP MINGGU 2 (CONTOH DATA RUNNING) -->
+        <div id="viewMinggu2" class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+          <div class="overflow-x-auto">
+            <table class="ledger-table">
+              <thead>
+                <tr>
+                  <th>Tgl</th>
+                  <th>Umur</th>
+                  <th>Jenis</th>
+                  <th>Pakai (Kg)</th>
+                  <th>Masuk (Kg)</th>
+                  <th>Sisa Pakan</th>
+                  <th>FI (g)</th>
+                  <th>BW (g)</th>
+                  <th>Mati</th>
+                  <th>Sisa Ekor</th>
+                </tr>
+              </thead>
+              <tbody class="text-slate-700">
+                <tr><td>12/10</td><td>8</td><td>B11A</td><td>150</td><td>150</td><td>100</td><td>35.0</td><td>173</td><td class="text-rose-600 font-bold">15</td><td>4.278</td></tr>
+                <tr><td>13/10</td><td>9</td><td>B11A</td><td>200</td><td>1500</td><td>1400</td><td>46.9</td><td>-</td><td class="text-rose-600 font-bold">15</td><td>4.263</td></tr>
+                <tr><td>14/10</td><td>10</td><td>B11A</td><td>200</td><td>0</td><td>1200</td><td>47.0</td><td>-</td><td>9</td><td>4.254</td></tr>
+                <tr><td>15/10</td><td>11</td><td>B11A</td><td>250</td><td>0</td><td>950</td><td>58.7</td><td>-</td><td>7</td><td>4.247</td></tr>
+                <tr><td>16/10</td><td>12</td><td>B11A</td><td>250</td><td>0</td><td>700</td><td>58.9</td><td>-</td><td>9</td><td>4.238</td></tr>
+                <tr><td>17/10</td><td>13</td><td>B11A</td><td>300</td><td>0</td><td>400</td><td>70.9</td><td>-</td><td>12</td><td>4.226</td></tr>
+                <tr class="today-row"><td>18/10</td><td>14</td><td>B11A</td><td>250</td><td>0</td><td>150</td><td>59.2</td><td>469</td><td>9</td><td>4.217</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="viewMingguOther" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center text-slate-500">
+          <p class="text-xs font-semibold" id="emptyWeekText">Data Rekapitulasi</p>
+          <p class="text-[11px] text-slate-400 mt-1">Belum ada catatan yang tersimpan untuk minggu ini.</p>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- SCREEN 4: AKUN & PIN                                                      -->
+      <!-- ========================================================================= -->
+      <section id="screenAkun" class="screen-view p-4 space-y-4 flex-1 hidden fade-in">
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-[#3B5166] text-white flex items-center justify-center font-bold text-base shadow-xs" id="akunAvatar">
+            BD
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-slate-900" id="akunNamaUser">Budi Santoso</h4>
+            <p class="text-xs text-slate-500" id="akunRoleDesc">Pekerja Lapangan (WA: 081234567890)</p>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs divide-y divide-slate-100 text-xs">
+          <button onclick="handleLogout()" class="w-full px-4 py-3 text-left font-bold text-rose-600 hover:bg-rose-50 flex items-center justify-between transition-colors">
+            <span>🚪 Keluar ke Layar Login</span>
+            <span>›</span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ================= BOTTOM NAV BAR (MODE HP) ================= -->
+    <nav id="bottomNav" class="bg-white border-t border-slate-200 px-4 py-2 flex items-center justify-around sticky bottom-0 z-20">
+      <button onclick="navigateTo('beranda')" id="botNavBeranda" class="text-[#3B5166] flex flex-col items-center gap-1 text-[11px] font-bold flex-1">
+        <span>🏠</span> <span>Beranda</span>
+      </button>
+      <button onclick="navigateTo('kandang')" id="botNavKandang" class="text-slate-400 hover:text-slate-800 flex flex-col items-center gap-1 text-[11px] font-medium flex-1">
+        <span>🐔</span> <span>Kandang</span>
+      </button>
+      <button onclick="navigateTo('akun')" id="botNavAkun" class="text-slate-400 hover:text-slate-800 flex flex-col items-center gap-1 text-[11px] font-medium flex-1">
+        <span>⚙️</span> <span>Akun</span>
+      </button>
+    </nav>
+  </main>
+
+  <!-- ================= MODAL WHATSAPP ================= -->
+  <div id="modalWA" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden fade-in">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-4 space-y-3 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-bold text-slate-800">Format Laporan WhatsApp</h3>
+        <button onclick="closeModalWA()" class="text-slate-400 hover:text-slate-700 text-lg">×</button>
+      </div>
+      <pre id="textWAPreview" class="bg-slate-50 p-3 rounded-xl text-xs font-mono text-slate-800 whitespace-pre-wrap border border-slate-200"></pre>
+      <div class="flex gap-2">
+        <button onclick="copyWA()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+          📋 Salin Teks
+        </button>
+        <button onclick="closeModalWA()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL CHICK-IN ================= -->
+  <div id="modalChickin" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden fade-in">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-4 space-y-3 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-bold text-slate-800">Mulai Chick-in Flok Baru</h3>
+        <button onclick="closeModalChickin()" class="text-slate-400 hover:text-slate-700 text-lg">×</button>
+      </div>
+      <div class="space-y-2 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nomor Flok</label>
+          <input type="number" id="inputFlokNumber" value="5" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800">
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="submitChickin()" class="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-colors">
+          Mulai Flok Sekarang
+        </button>
+        <button onclick="closeModalChickin()" class="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL PANEN ================= -->
+  <div id="modalPanen" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden fade-in">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-4 space-y-3 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-bold text-slate-800">Catat Penjualan Panen</h3>
+        <button onclick="closeModalPanen()" class="text-slate-400 hover:text-slate-700 text-lg">×</button>
+      </div>
+      <div class="flex bg-slate-100 p-1 rounded-xl text-xs gap-1">
+        <button id="btnPanenJarang" onclick="setPanenType('jarang')" class="flex-1 py-2 font-bold rounded-lg bg-white text-slate-800 shadow-xs border border-slate-200">Panen Jarang (Sebagian)</button>
+        <button id="btnPanenTotal" onclick="setPanenType('total')" class="flex-1 py-2 font-medium rounded-lg text-slate-500 hover:text-slate-800">Panen Total (Tutup Flok)</button>
+      </div>
+      <div id="warningPanenTotal" class="hidden p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+        ⚠️ <strong>Perhatian:</strong> Panen total akan mengakhiri Flok #4, membekukan data rekapitulasi, dan mengubah status Kandang 01 menjadi Kosong (Masa Sanitasi).
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="submitPanen()" class="flex-1 py-2.5 bg-[#3B5166] hover:bg-[#2C3E50] text-white font-bold text-xs rounded-xl transition-colors">
+          Simpan Data Panen
+        </button>
+        <button onclick="closeModalPanen()" class="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL TAMBAH KANDANG ================= -->
+  <div id="modalTambahKandang" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden fade-in">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-4 space-y-3 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-bold text-slate-800">Daftarkan Gedung Kandang Baru</h3>
+        <button onclick="closeModalTambahKandang()" class="text-slate-400 hover:text-slate-700 text-lg">×</button>
+      </div>
+      <div class="space-y-2 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nama Gedung</label>
+          <input type="text" value="Kandang 03" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Kapasitas Maksimal (Ekor)</label>
+          <input type="number" value="6000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold">
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="submitTambahKandang()" class="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-colors">
+          Simpan Master Gedung
+        </button>
+        <button onclick="closeModalTambahKandang()" class="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#3B5166] text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg transition-opacity opacity-0 pointer-events-none z-50">
+    Aksi Berhasil
+  </div>
+
+  <!-- Scripts -->
+  <script src="./js/db.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
