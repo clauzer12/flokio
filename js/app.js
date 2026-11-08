@@ -1,7 +1,7 @@
 /**
  * Flokio Main Application Logic
  * Siklus Lengkap Broiler (Chick-in s.d. Panen Total), Rekap 10 Kolom Dinamis,
- * Sinkronisasi Role Realtime & Portabilitas Multi-Perangkat.
+ * Sesi Persisten (Anti-Logout saat Refresh) & Format Tampilan Konsisten.
  */
 
 // ================= GLOBAL STATE =================
@@ -22,6 +22,154 @@ let currentPenjaga = {
   wa: '081234567890'
 };
 
+// ================= SESI PENGGUNA (PERSISTENCE ANTI-LOGOUT REFRESH) =================
+const SESSION_KEY = 'flokio_user_session';
+const DEVICE_MODE_KEY = 'flokio_device_mode';
+
+function getSavedSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveSession(role, screen = 'beranda') {
+  try {
+    const session = {
+      isLoggedIn: true,
+      role: role,
+      lastScreen: screen === 'login' ? 'beranda' : screen,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch (e) {
+    console.warn('[Session] Gagal simpan sesi:', e);
+  }
+}
+
+function updateSessionScreen(screen) {
+  const session = getSavedSession();
+  if (session && session.isLoggedIn) {
+    session.lastScreen = screen === 'login' ? 'beranda' : screen;
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    } catch (_) {}
+  }
+}
+
+function clearSession() {
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch (e) {}
+}
+
+// ================= PENGATURAN FORMAT TAMPILAN KONSISTEN =================
+function getDeviceModePref() {
+  return localStorage.getItem(DEVICE_MODE_KEY) || 'auto';
+}
+
+function setDeviceModePref(mode) {
+  localStorage.setItem(DEVICE_MODE_KEY, mode);
+  applyLayout();
+  updateDeviceButtonsUI();
+  showToast(`Format Layar Diatur: ${mode === 'auto' ? 'Otomatis' : (mode === 'phone' ? 'Kunci Mode HP' : 'Kunci Mode Tablet')}`);
+}
+
+function resolveActiveDevice() {
+  const pref = getDeviceModePref();
+  if (pref === 'phone') return 'phone';
+  if (pref === 'tablet') return 'tablet';
+  // Mode Auto: Deteksi lebar layar riil
+  return window.innerWidth >= 768 ? 'tablet' : 'phone';
+}
+
+function updateDeviceButtonsUI() {
+  const pref = getDeviceModePref();
+  const bPhone = document.getElementById('btnDevicePhone');
+  const bAuto = document.getElementById('btnDeviceAuto');
+  const bTab = document.getElementById('btnDeviceTablet');
+
+  const activeBtn = 'px-1.5 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs transition-all';
+  const inactiveBtn = 'px-1.5 py-0.5 rounded text-slate-500 hover:text-slate-900 transition-all';
+
+  if (bPhone) bPhone.className = pref === 'phone' ? activeBtn : inactiveBtn;
+  if (bAuto) bAuto.className = pref === 'auto' ? activeBtn : inactiveBtn;
+  if (bTab) bTab.className = pref === 'tablet' ? activeBtn : inactiveBtn;
+
+  // Tombol di Layar Akun
+  const optAuto = document.getElementById('btnOptDeviceAuto');
+  const optPhone = document.getElementById('btnOptDevicePhone');
+  const optTab = document.getElementById('btnOptDeviceTablet');
+
+  const activeOpt = 'p-2.5 rounded-xl border-2 border-[#3B5166] bg-slate-50 text-center transition-all shadow-xs';
+  const inactiveOpt = 'p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-center transition-all';
+
+  if (optAuto) optAuto.className = pref === 'auto' ? activeOpt : inactiveOpt;
+  if (optPhone) optPhone.className = pref === 'phone' ? activeOpt : inactiveOpt;
+  if (optTab) optTab.className = pref === 'tablet' ? activeOpt : inactiveOpt;
+}
+
+// Layout Controller Terpadu (Menghilangkan Lonjakan / Morphing UI)
+function applyLayout() {
+  currentDevice = resolveActiveDevice();
+  const shell = document.getElementById('appShell');
+  const sidebar = document.getElementById('sidebar');
+  const bottomNav = document.getElementById('bottomNav');
+  const mainTopHeader = document.getElementById('mainTopHeader');
+  if (!shell) return;
+
+  if (currentScreen === 'login') {
+    // LAYAR LOGIN
+    if (sidebar) {
+      sidebar.classList.add('hidden');
+      sidebar.classList.remove('flex');
+    }
+    if (bottomNav) bottomNav.classList.add('hidden');
+    if (mainTopHeader) mainTopHeader.classList.add('hidden');
+
+    if (currentDevice === 'tablet') {
+      shell.className = 'w-full max-w-md md:max-w-xl mx-auto flex-1 flex flex-col justify-center bg-white rounded-3xl shadow-xl min-h-[640px] my-auto border border-slate-200/80 overflow-hidden relative p-4';
+    } else {
+      shell.className = 'w-full max-w-md mx-auto flex-1 flex flex-col justify-center bg-white min-h-screen shadow-md relative p-2';
+    }
+    return;
+  }
+
+  // LAYAR KERJA (BERANDA, KANDANG, REKAP, AKUN)
+  if (mainTopHeader) mainTopHeader.classList.remove('hidden');
+
+  if (currentDevice === 'tablet') {
+    // MODE TABLET / LAPTOP (LEBAR + SIDEBAR KIRI TETAP KONSISTEN)
+    shell.className = 'w-full max-w-5xl mx-auto flex-1 flex flex-row bg-white rounded-3xl shadow-xl min-h-[820px] my-4 overflow-hidden border border-slate-200/80 relative';
+
+    if (sidebar) {
+      sidebar.classList.remove('hidden');
+      sidebar.classList.add('flex');
+      updateSidebarNavState(currentScreen);
+    }
+    if (bottomNav) bottomNav.classList.add('hidden');
+
+  } else {
+    // MODE HP (RAMPING VERTIKAL + NAVIGASI BAWAH TETAP KONSISTEN)
+    shell.className = 'w-full max-w-md mx-auto flex-1 flex flex-col bg-white min-h-screen shadow-md relative';
+
+    if (sidebar) {
+      sidebar.classList.add('hidden');
+      sidebar.classList.remove('flex');
+    }
+    if (bottomNav) bottomNav.classList.remove('hidden');
+    updateBottomNavState(currentScreen);
+  }
+}
+
+window.addEventListener('resize', () => {
+  if (getDeviceModePref() === 'auto') {
+    applyLayout();
+  }
+});
+
 // ================= INITIALIZATION & SERVICE WORKER =================
 document.addEventListener('DOMContentLoaded', async () => {
   // 1. Daftarkan Service Worker untuk PWA Offline
@@ -40,6 +188,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (savedPenjaga) {
       currentPenjaga.nama = savedPenjaga.nama || 'Budi Santoso';
       currentPenjaga.wa = savedPenjaga.wa || '081234567890';
+      const inputNama = document.getElementById('loginOperatorNama');
+      const inputWA = document.getElementById('loginOperatorWA');
+      if (inputNama) inputNama.value = currentPenjaga.nama;
+      if (inputWA) inputWA.value = currentPenjaga.wa;
     }
 
     // Muat Flok Aktif
@@ -62,19 +214,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('[App Init] Gagal inisialisasi data:', err);
   }
 
-  // 3. Render Awal & Deteksi Perangkat
-  detectAndApplyDevice();
+  // 3. Render Views & Sinkronisasi Indikator Layout
+  updateDeviceButtonsUI();
   renderAllViews();
   selectUmur(currentInputUmur);
-  setRole('kandang');
-  navigateTo('login');
+
+  // 4. CEK SESI PERSISTEN AGAR TIDAK LOGOUT SAAT DI-REFRESH
+  const savedSession = getSavedSession();
+  if (savedSession && savedSession.isLoggedIn) {
+    setRole(savedSession.role || 'kandang');
+    navigateTo(savedSession.lastScreen || 'beranda');
+  } else {
+    setRole('kandang');
+    navigateTo('login');
+  }
 });
 
 // Helper: Muat ulang flok dan catatan harian dari DB
 async function reloadAppData() {
   activeFlok = await FlokioDB.getActiveFlokByKandang(activeKandangId);
   if (!activeFlok) {
-    // Fallback jika belum ada
     activeFlok = {
       id: 'flok_k01_4',
       kandang_id: 'k01',
@@ -86,8 +245,22 @@ async function reloadAppData() {
       status_siklus: 'berjalan',
       stok_pakan_awal_kg: 1500,
       jenis_pakan_awal: 'BP-1 (Starter)',
+      standar_mingguan: {
+        m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
+        m2: { umur: 14, std_bw_gram: 475, std_fcr: 1.18 },
+        m3: { umur: 21, std_bw_gram: 1020, std_fcr: 1.38 },
+        m4: { umur: 28, std_bw_gram: 1650, std_fcr: 1.52 }
+      },
       panen_jarang: [],
       panen_total: null
+    };
+    await FlokioDB.saveFlok(activeFlok);
+  } else if (!activeFlok.standar_mingguan) {
+    activeFlok.standar_mingguan = {
+      m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
+      m2: { umur: 14, std_bw_gram: 475, std_fcr: 1.18 },
+      m3: { umur: 21, std_bw_gram: 1020, std_fcr: 1.38 },
+      m4: { umur: 28, std_bw_gram: 1650, std_fcr: 1.52 }
     };
     await FlokioDB.saveFlok(activeFlok);
   }
@@ -111,39 +284,21 @@ function initUmurDropdown() {
 // ================= SCREEN NAVIGATION ROUTER =================
 function navigateTo(screenName) {
   currentScreen = screenName;
+  updateSessionScreen(screenName);
+
+  // Sembunyikan semua screen-view
   document.querySelectorAll('.screen-view').forEach(el => el.classList.add('hidden'));
 
-  // Layar Login: Sembunyikan Header & Navigasi
+  // Terapkan layout yang konsisten untuk screen saat ini
+  applyLayout();
+
+  // Layar Login
   if (screenName === 'login') {
     document.getElementById('screenLogin').classList.remove('hidden');
-    document.getElementById('mainTopHeader').classList.add('hidden');
-    document.getElementById('bottomNav').classList.add('hidden');
-    const sb = document.getElementById('sidebar');
-    if (sb) {
-      sb.classList.add('hidden');
-      sb.classList.remove('flex');
-    }
     return;
   }
 
-  // Layar Kerja
-  document.getElementById('mainTopHeader').classList.remove('hidden');
-  if (currentDevice === 'phone') {
-    document.getElementById('bottomNav').classList.remove('hidden');
-    const sb = document.getElementById('sidebar');
-    if (sb) {
-      sb.classList.add('hidden');
-      sb.classList.remove('flex');
-    }
-  } else {
-    document.getElementById('bottomNav').classList.add('hidden');
-    const sb = document.getElementById('sidebar');
-    if (sb) {
-      sb.classList.remove('hidden');
-      sb.classList.add('flex');
-    }
-  }
-
+  // Layar Kerja Target
   if (screenName === 'beranda') {
     document.getElementById('screenBeranda').classList.remove('hidden');
     renderAllViews();
@@ -241,6 +396,7 @@ async function submitLogin(role) {
     }
 
     if (pin === '1234') {
+      saveSession('kandang', 'beranda');
       setRole('kandang');
       navigateTo('beranda');
       showToast(`Login Berhasil! Selamat bertugas, ${currentPenjaga.nama}.`);
@@ -250,6 +406,7 @@ async function submitLogin(role) {
   } else {
     const pass = document.getElementById('loginOwnerPass').value;
     if (pass === '8888') {
+      saveSession('owner', 'beranda');
       setRole('owner');
       navigateTo('beranda');
       showToast('Login Berhasil! Selamat datang, Pak Haji (Owner).');
@@ -265,18 +422,30 @@ function quickLoginDemo(role) {
 }
 
 function handleLogout() {
+  clearSession();
   navigateTo('login');
   showToast('Sesi Berakhir: Anda telah keluar ke Layar Login.');
 }
 
 function toggleActiveRole() {
-  setRole(currentRole === 'kandang' ? 'owner' : 'kandang');
-  showToast(`Beralih Mode ke: ${currentRole === 'owner' ? '👑 Owner' : '👷 Anak Kandang'}`);
+  const nextRole = currentRole === 'kandang' ? 'owner' : 'kandang';
+  setRole(nextRole);
+  showToast(`Beralih Mode ke: ${nextRole === 'owner' ? '👑 Owner' : '👷 Anak Kandang'}`);
 }
 
 // ================= ROLE & ACCESS CONTROL =================
 function setRole(role) {
   currentRole = role;
+
+  // Sinkronkan peran ke sesi tersimpan
+  const session = getSavedSession();
+  if (session && session.isLoggedIn) {
+    session.role = role;
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    } catch (_) {}
+  }
+
   const btnKandang = document.getElementById('btnRoleKandang');
   const btnOwner = document.getElementById('btnRoleOwner');
 
@@ -371,10 +540,9 @@ function setRole(role) {
       if (cardEmpty) cardEmpty.classList.add('hidden');
       if (cardKandang) cardKandang.classList.remove('hidden');
 
-      // Cek apakah umur saat ini sudah disimpan
       const existingLog = dailyLogs.find(l => l.umur_hari === currentInputUmur);
       if (existingLog) {
-        if (formInput) formInput.classList.remove('hidden'); // Form tetap terlihat agar bisa diedit
+        if (formInput) formInput.classList.remove('hidden');
         if (cardSaved) cardSaved.classList.remove('hidden');
       } else {
         if (formInput) formInput.classList.remove('hidden');
@@ -388,7 +556,6 @@ function setRole(role) {
     if (sidebarSubLabel) sidebarSubLabel.innerText = 'Operator Kandang 01';
   }
 
-  // Jika sedang di layar Rekap saat berubah ke Anak Kandang, redirect ke Beranda
   if (currentRole === 'kandang' && currentScreen === 'rekap') {
     navigateTo('beranda');
   } else {
@@ -397,49 +564,6 @@ function setRole(role) {
 
   renderAkunView();
 }
-
-// ================= DEVICE CONTROLLER (RESPONSIVE OTOMATIS) =================
-function detectAndApplyDevice() {
-  const isTablet = window.innerWidth >= 768;
-  setDevice(isTablet ? 'tablet' : 'phone');
-}
-
-function setDevice(device) {
-  currentDevice = device;
-  const shell = document.getElementById('appShell');
-  const sidebar = document.getElementById('sidebar');
-  const bottomNav = document.getElementById('bottomNav');
-  if (!shell) return;
-
-  if (device === 'phone') {
-    shell.className = 'w-full max-w-md mx-auto flex-1 flex flex-col bg-white min-h-screen shadow-md';
-    if (sidebar) {
-      sidebar.classList.add('hidden');
-      sidebar.classList.remove('flex');
-    }
-    if (currentScreen !== 'login' && bottomNav) bottomNav.classList.remove('hidden');
-  } else {
-    shell.className = currentScreen === 'login'
-      ? 'w-full max-w-md mx-auto flex-1 flex flex-col bg-white rounded-3xl shadow-xl min-h-[720px] my-auto border border-slate-200'
-      : 'w-full max-w-5xl mx-auto flex-1 flex flex-row bg-white rounded-3xl shadow-xl min-h-[820px] my-4 overflow-hidden border border-slate-200';
-
-    if (currentScreen !== 'login') {
-      if (sidebar) {
-        sidebar.classList.remove('hidden');
-        sidebar.classList.add('flex');
-        updateSidebarNavState(currentScreen);
-      }
-    } else {
-      if (sidebar) {
-        sidebar.classList.add('hidden');
-        sidebar.classList.remove('flex');
-      }
-    }
-    if (bottomNav) bottomNav.classList.add('hidden');
-  }
-}
-
-window.addEventListener('resize', detectAndApplyDevice);
 
 // ================= PERHITUNGAN METRIK & CORE DATA MODEL =================
 function computeFlokMetrics(flok, logs) {
@@ -678,7 +802,6 @@ function renderOwnerAuditView(metrics) {
     if (oCatatan) oCatatan.innerText = '"Belum ada catatan untuk hari ini."';
   }
 
-  // Update Link WhatsApp
   updatePenjagaWAInfo(log);
 }
 
@@ -720,6 +843,8 @@ function renderAkunView() {
     if (desc) desc.innerText = `Pekerja Lapangan Kandang 01 (WA: ${currentPenjaga.wa})`;
     if (targetLabel) targetLabel.innerText = 'Owner';
   }
+
+  updateDeviceButtonsUI();
 }
 
 // ================= FORM CONTROLLER & UMUR NAVIGATION =================
@@ -734,7 +859,6 @@ function stepUmur(delta) {
 
 function onInputDateChange(newDateStr) {
   if (!activeFlok || !newDateStr) return;
-  // Hitung selisih hari dari tanggal chick-in
   const chickinDate = new Date(activeFlok.tanggal_chickin);
   const pickedDate = new Date(newDateStr);
   const diffTime = pickedDate - chickinDate;
@@ -750,16 +874,13 @@ function onInputDateChange(newDateStr) {
 function selectUmur(umur) {
   currentInputUmur = umur;
 
-  // Update Dropdown Selector
   const sel = document.getElementById('selectUmurInput');
   if (sel) sel.value = umur;
 
-  // Update Tanggal
   const dateStr = addDaysToDateStr(activeFlok ? activeFlok.tanggal_chickin : '2024-10-05', umur - 1);
   const inputTgl = document.getElementById('inputTanggalRecord');
   if (inputTgl) inputTgl.value = dateStr;
 
-  // Update Fase Badge
   const bFase = document.getElementById('badgeFase');
   if (bFase) {
     if (umur <= 7) {
@@ -774,11 +895,9 @@ function selectUmur(umur) {
     }
   }
 
-  // Cek apakah hari ini sudah pernah disimpan
   const existingLog = dailyLogs.find(l => l.umur_hari === umur);
   const bStatus = document.getElementById('badgeFormStatus');
   const cardSaved = document.getElementById('cardCatatanSaved');
-  const formInput = document.getElementById('sectionFormInput');
 
   if (existingLog) {
     if (bStatus) {
@@ -786,7 +905,6 @@ function selectUmur(umur) {
       bStatus.innerText = '✓ Tersimpan (Mode Edit)';
     }
 
-    // Isi Nilai Form dengan data yang tersimpan
     document.getElementById('inputMati').value = existingLog.kematian_ekor || 0;
     const pakanKg = existingLog.pakan_pakai_kg || 0;
     document.getElementById('inputPakan').value = pakanUnit === 'sak' ? (pakanKg / 50).toFixed(1) : pakanKg;
@@ -795,7 +913,6 @@ function selectUmur(umur) {
     document.getElementById('inputBW').value = existingLog.bw_sampling_gram || '';
     document.getElementById('inputCatatanHarian').value = existingLog.catatan || '';
 
-    // Isi Card Saved
     const sTitle = document.getElementById('savedCardTitle');
     if (sTitle) sTitle.innerText = `Catatan Hari ke-${umur} Sudah Tersimpan`;
     const sMati = document.getElementById('savedMatiSummary');
@@ -814,7 +931,6 @@ function selectUmur(umur) {
       bStatus.innerText = '📝 Hari Baru';
     }
 
-    // Default values
     document.getElementById('inputMati').value = 0;
     document.getElementById('inputJenisPakan').value = getDefaultFeedForAge(umur);
     document.getElementById('inputPakan').value = getDefaultFeedKgForAge(umur);
@@ -914,13 +1030,11 @@ async function simpanLog(advanceToNext = false) {
 
   try {
     await FlokioDB.saveDailyLog(logPayload);
-    // Muat ulang dari DB agar state konsisten
     dailyLogs = await FlokioDB.getDailyLogsByFlok(activeFlok.id);
   } catch (e) {
     console.error('Gagal simpan log ke DB:', e);
   }
 
-  // Perbarui tampilan
   renderAllViews();
   selectUmur(currentInputUmur);
 
@@ -957,6 +1071,76 @@ function renderRekapTable() {
   const startDay = ((currentWeekTab - 1) * 7) + 1;
   const endDay = currentWeekTab * 7;
 
+  // 1. Render Matriks 4 Minggu Standar vs Realisasi di Bagian Atas Rekap
+  const matrixContainer = document.getElementById('rekap4WeekMatrix');
+  if (matrixContainer && activeFlok) {
+    const stdData = activeFlok.standar_mingguan || {
+      m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
+      m2: { umur: 14, std_bw_gram: 475, std_fcr: 1.18 },
+      m3: { umur: 21, std_bw_gram: 1020, std_fcr: 1.38 },
+      m4: { umur: 28, std_bw_gram: 1650, std_fcr: 1.52 }
+    };
+
+    let matrixHtml = '';
+    for (let w = 1; w <= 4; w++) {
+      const wKey = 'm' + w;
+      const targetUmur = w * 7;
+      const targetStd = stdData[wKey] || { umur: targetUmur, std_bw_gram: 0, std_fcr: 0 };
+      const isActiveTab = currentWeekTab === w;
+
+      // Cari sampling BW minggu w
+      const wStart = ((w - 1) * 7) + 1;
+      const wEnd = w * 7;
+      let wBW = null;
+      for (let day = wStart; day <= wEnd; day++) {
+        const record = dayRecords[day - 1];
+        if (record && record.hasLog && record.bw !== '-') {
+          wBW = Number(record.bw);
+        }
+      }
+
+      let statusBadge = '';
+      let diffText = '';
+      if (wBW !== null) {
+        const diff = wBW - targetStd.std_bw_gram;
+        if (diff >= 0) {
+          diffText = `+${diff}g`;
+          statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.5 rounded-md">🟢 Sesuai Target</span>`;
+        } else {
+          diffText = `${diff}g`;
+          statusBadge = `<span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded-md">🟡 Di Bawah Target</span>`;
+        }
+      } else {
+        const isPastOrCurrent = metrics.maxLoggedUmur >= wStart;
+        statusBadge = isPastOrCurrent 
+          ? `<span class="bg-slate-100 text-slate-500 text-[9px] font-medium px-1.5 py-0.5 rounded-md">⏳ Belum Sampling</span>`
+          : `<span class="bg-slate-50 text-slate-400 text-[9px] px-1.5 py-0.5 rounded-md">Masa Depan</span>`;
+      }
+
+      const cardBorder = isActiveTab 
+        ? 'border-2 border-[#3B5166] bg-sky-50/50 shadow-xs' 
+        : 'border border-slate-200 bg-slate-50/60 hover:bg-slate-100/70';
+
+      matrixHtml += `
+        <div onclick="switchWeek(${w})" class="cursor-pointer p-2.5 rounded-xl ${cardBorder} transition-all space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-[11px] ${isActiveTab ? 'text-[#3B5166]' : 'text-slate-800'}">M${w} (H-${targetUmur})</span>
+            ${statusBadge}
+          </div>
+          <div class="text-[10px] space-y-0.5">
+            <div class="text-slate-500">
+              Target Std: <strong class="text-slate-800">${targetStd.std_bw_gram}g</strong> • FCR <strong class="text-slate-800">${Number(targetStd.std_fcr).toFixed(2)}</strong>
+            </div>
+            <div class="text-slate-700 font-semibold">
+              Realisasi: ${wBW ? `<strong class="text-slate-900">${wBW}g</strong> <span class="text-[9px] font-bold ${wBW >= targetStd.std_bw_gram ? 'text-emerald-600' : 'text-amber-600'}">(${diffText})</span>` : '<span class="text-slate-400 font-normal">-</span>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    matrixContainer.innerHTML = matrixHtml;
+  }
+
   let htmlRows = '';
   let sumPakai = 0;
   let sumMasuk = 0;
@@ -971,7 +1155,10 @@ function renderRekapTable() {
     if (!r) continue;
 
     const isCurrentActiveDay = d === currentInputUmur;
-    const rowClass = isCurrentActiveDay ? 'today-row cursor-pointer' : 'cursor-pointer hover:bg-slate-50';
+    const isCheckpointDay = d === 7 || d === 14 || d === 21 || d === 28;
+    const rowClass = isCurrentActiveDay 
+      ? 'today-row cursor-pointer' 
+      : (isCheckpointDay ? 'bg-amber-50/40 cursor-pointer hover:bg-amber-50/70' : 'cursor-pointer hover:bg-slate-50');
 
     if (r.hasLog) {
       sumPakai += r.pakanPakaiKg;
@@ -990,16 +1177,37 @@ function renderRekapTable() {
       ? `<span class="text-rose-600 font-bold">${r.mati}</span>`
       : r.mati;
 
+    // Checkpoint badge di kolom Umur
+    const umurDisplay = isCheckpointDay
+      ? `<strong>${r.umur}</strong> <span class="text-[9px] bg-sky-100 text-sky-800 font-bold px-1 py-0.5 rounded ml-0.5" title="Hari Evaluasi Target Standar Mingguan">🎯 M${d/7}</span>`
+      : `<strong>${r.umur}</strong>`;
+
+    // Target Standar di Kolom BW
+    let bwDisplay = r.bw;
+    if (isCheckpointDay && activeFlok.standar_mingguan) {
+      const wKey = 'm' + (d / 7);
+      const stdBW = activeFlok.standar_mingguan[wKey]?.std_bw_gram;
+      if (stdBW) {
+        if (r.bw !== '-') {
+          const diff = Number(r.bw) - stdBW;
+          const diffColor = diff >= 0 ? 'text-emerald-600' : 'text-amber-600';
+          bwDisplay = `<strong>${r.bw}</strong><br><span class="text-[9px] text-slate-400 font-normal">Std ${stdBW}g <span class="${diffColor} font-bold">(${diff >= 0 ? '+' : ''}${diff})</span></span>`;
+        } else {
+          bwDisplay = `<span class="text-[10px] text-slate-400 italic">Target: ${stdBW}g</span>`;
+        }
+      }
+    }
+
     htmlRows += `
       <tr class="${rowClass}" onclick="selectUmur(${d}); navigateTo('beranda');" title="Klik untuk edit hari ke-${d}">
         <td>${shortDate}</td>
-        <td><strong>${r.umur}</strong></td>
+        <td>${umurDisplay}</td>
         <td>${r.jenisPakan ? r.jenisPakan.split(' ')[0] : '-'}</td>
         <td>${r.pakanPakaiKg > 0 ? r.pakanPakaiKg : '-'}</td>
         <td>${r.pakanMasukKg > 0 ? r.pakanMasukKg : '-'}</td>
         <td>${r.sisaPakanKg.toLocaleString('id-ID')}</td>
         <td>${r.fi}</td>
-        <td>${r.bw}</td>
+        <td>${bwDisplay}</td>
         <td>${matiDisplay}</td>
         <td class="font-bold text-slate-900">${r.sisaAyam.toLocaleString('id-ID')}</td>
       </tr>
@@ -1008,9 +1216,49 @@ function renderRekapTable() {
 
   tbody.innerHTML = htmlRows;
 
-  // Render Footer Rekap Mingguan
+  // Render Footer Rekap Mingguan & Row Komparasi Target Standar
   const avgFI = fiCount > 0 ? (sumFI / fiCount).toFixed(1) : '-';
   if (tfoot) {
+    let targetRowHtml = '';
+    if (currentWeekTab <= 4 && activeFlok.standar_mingguan) {
+      const weekKey = 'm' + currentWeekTab;
+      const targetUmur = currentWeekTab * 7;
+      const defBW = [185, 475, 1020, 1650][currentWeekTab - 1];
+      const defFCR = [0.90, 1.18, 1.38, 1.52][currentWeekTab - 1];
+      const weekStd = activeFlok.standar_mingguan[weekKey] || { umur: targetUmur, std_bw_gram: defBW, std_fcr: defFCR };
+
+      let actBWVal = lastBW !== '-' ? Number(lastBW) : null;
+      let diffSign = '';
+      let diffBadge = '';
+      if (actBWVal !== null) {
+        const diff = actBWVal - weekStd.std_bw_gram;
+        diffSign = diff >= 0 ? `+${diff}g` : `${diff}g`;
+        diffBadge = diff >= 0
+          ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">🟢 Target Tercapai (${diffSign})</span>`
+          : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">🟡 Di Bawah Target (${diffSign})</span>`;
+      } else {
+        diffBadge = `<span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">⏳ Belum Sampling H-${targetUmur}</span>`;
+      }
+
+      targetRowHtml = `
+        <tr class="bg-sky-50/90 text-slate-800 border-t border-sky-200 font-semibold text-[10px] sm:text-xs">
+          <td colspan="3" class="text-left px-2 font-bold text-sky-900">🎯 Target Standar M${currentWeekTab} (H-${targetUmur}):</td>
+          <td colspan="3" class="text-left text-slate-600">
+            Target FCR: <strong class="text-slate-900">${Number(weekStd.std_fcr).toFixed(2)}</strong> 
+            (Aktual Flok: <strong class="text-slate-900">${metrics.fcr}</strong>)
+          </td>
+          <td>-</td>
+          <td class="font-bold text-sky-950">
+            Std: ${weekStd.std_bw_gram}g
+            ${actBWVal ? `<br><span class="text-[9px] ${actBWVal >= weekStd.std_bw_gram ? 'text-emerald-700' : 'text-amber-700'}">Aktual: ${actBWVal}g</span>` : ''}
+          </td>
+          <td colspan="2" class="text-center">
+            ${diffBadge}
+          </td>
+        </tr>
+      `;
+    }
+
     tfoot.innerHTML = `
       <tr>
         <td colspan="3" class="text-left px-2">Total Minggu ${currentWeekTab}:</td>
@@ -1022,7 +1270,49 @@ function renderRekapTable() {
         <td class="text-rose-600 font-bold">${sumMati > 0 ? sumMati : '-'}</td>
         <td class="font-bold text-slate-900">${lastSisaEkor.toLocaleString('id-ID')}</td>
       </tr>
+      ${targetRowHtml}
     `;
+  }
+
+  // Render Banner Komparasi Target Standar vs Aktual Minggu Aktif
+  const stdTitle = document.getElementById('rekapStdTitle');
+  const stdTargetText = document.getElementById('rekapStdTargetText');
+  const stdActualText = document.getElementById('rekapStdActualText');
+
+  if (activeFlok.standar_mingguan && stdTitle && stdTargetText && stdActualText) {
+    if (currentWeekTab <= 4) {
+      const weekKey = 'm' + currentWeekTab;
+      const targetUmur = currentWeekTab * 7;
+      const defBW = [185, 475, 1020, 1650][currentWeekTab - 1];
+      const defFCR = [0.90, 1.18, 1.38, 1.52][currentWeekTab - 1];
+      const weekStd = activeFlok.standar_mingguan[weekKey] || { umur: targetUmur, std_bw_gram: defBW, std_fcr: defFCR };
+
+      stdTitle.innerText = `Target Standar Minggu ${currentWeekTab} (H-${targetUmur})`;
+      stdTargetText.innerText = `Target Std: BW ${weekStd.std_bw_gram}g • FCR ${Number(weekStd.std_fcr).toFixed(2)}`;
+
+      // Ambil sampling BW minggu ini, atau sampling terakhir s.d. minggu ini
+      let actBW = null;
+      if (lastBW !== '-') {
+        actBW = Number(lastBW);
+      } else {
+        const prevLogsWithBW = dayRecords.slice(0, endDay).filter(r => r.hasLog && r.bw !== '-');
+        if (prevLogsWithBW.length > 0) {
+          actBW = Number(prevLogsWithBW[prevLogsWithBW.length - 1].bw);
+        }
+      }
+
+      if (actBW) {
+        const diffBW = actBW - Number(weekStd.std_bw_gram);
+        const diffFormatted = diffBW >= 0 ? `+${diffBW}g 🟢` : `${diffBW}g 🟡`;
+        stdActualText.innerHTML = `Aktual: Sampling BW <strong>${actBW}g</strong> (${diffFormatted}) • FCR <strong>${metrics.fcr}</strong>`;
+      } else {
+        stdActualText.innerHTML = `Aktual: Belum sampling BW • FCR <strong>${metrics.fcr}</strong>`;
+      }
+    } else {
+      stdTitle.innerText = `Target Standar Minggu 5 (H-35 / Panen)`;
+      stdTargetText.innerText = `Target Panen / Akhir Siklus`;
+      stdActualText.innerHTML = `Aktual: BW <strong>${metrics.latestBW}g</strong> • FCR <strong>${metrics.fcr}</strong>`;
+    }
   }
 }
 
@@ -1074,6 +1364,109 @@ function copyWA() {
   closeModalWA();
 }
 
+// ================= PRESET STANDAR MINGGUAN =================
+function applyPresetStd(preset) {
+  if (preset === 'cobb') {
+    if (document.getElementById('inputStdBW_M1')) document.getElementById('inputStdBW_M1').value = 185;
+    if (document.getElementById('inputStdFCR_M1')) document.getElementById('inputStdFCR_M1').value = '0.90';
+    if (document.getElementById('inputStdBW_M2')) document.getElementById('inputStdBW_M2').value = 475;
+    if (document.getElementById('inputStdFCR_M2')) document.getElementById('inputStdFCR_M2').value = '1.18';
+    if (document.getElementById('inputStdBW_M3')) document.getElementById('inputStdBW_M3').value = 1020;
+    if (document.getElementById('inputStdFCR_M3')) document.getElementById('inputStdFCR_M3').value = '1.38';
+    if (document.getElementById('inputStdBW_M4')) document.getElementById('inputStdBW_M4').value = 1650;
+    if (document.getElementById('inputStdFCR_M4')) document.getElementById('inputStdFCR_M4').value = '1.52';
+  } else if (preset === 'ross') {
+    if (document.getElementById('inputStdBW_M1')) document.getElementById('inputStdBW_M1').value = 195;
+    if (document.getElementById('inputStdFCR_M1')) document.getElementById('inputStdFCR_M1').value = '0.88';
+    if (document.getElementById('inputStdBW_M2')) document.getElementById('inputStdBW_M2').value = 490;
+    if (document.getElementById('inputStdFCR_M2')) document.getElementById('inputStdFCR_M2').value = '1.15';
+    if (document.getElementById('inputStdBW_M3')) document.getElementById('inputStdBW_M3').value = 1050;
+    if (document.getElementById('inputStdFCR_M3')) document.getElementById('inputStdFCR_M3').value = '1.35';
+    if (document.getElementById('inputStdBW_M4')) document.getElementById('inputStdBW_M4').value = 1700;
+    if (document.getElementById('inputStdFCR_M4')) document.getElementById('inputStdFCR_M4').value = '1.49';
+  }
+}
+
+function applyPresetStdToEdit(preset) {
+  if (preset === 'cobb') {
+    if (document.getElementById('editStdBW_M1')) document.getElementById('editStdBW_M1').value = 185;
+    if (document.getElementById('editStdFCR_M1')) document.getElementById('editStdFCR_M1').value = '0.90';
+    if (document.getElementById('editStdBW_M2')) document.getElementById('editStdBW_M2').value = 475;
+    if (document.getElementById('editStdFCR_M2')) document.getElementById('editStdFCR_M2').value = '1.18';
+    if (document.getElementById('editStdBW_M3')) document.getElementById('editStdBW_M3').value = 1020;
+    if (document.getElementById('editStdFCR_M3')) document.getElementById('editStdFCR_M3').value = '1.38';
+    if (document.getElementById('editStdBW_M4')) document.getElementById('editStdBW_M4').value = 1650;
+    if (document.getElementById('editStdFCR_M4')) document.getElementById('editStdFCR_M4').value = '1.52';
+  } else if (preset === 'ross') {
+    if (document.getElementById('editStdBW_M1')) document.getElementById('editStdBW_M1').value = 195;
+    if (document.getElementById('editStdFCR_M1')) document.getElementById('editStdFCR_M1').value = '0.88';
+    if (document.getElementById('editStdBW_M2')) document.getElementById('editStdBW_M2').value = 490;
+    if (document.getElementById('editStdFCR_M2')) document.getElementById('editStdFCR_M2').value = '1.15';
+    if (document.getElementById('editStdBW_M3')) document.getElementById('editStdBW_M3').value = 1050;
+    if (document.getElementById('editStdFCR_M3')) document.getElementById('editStdFCR_M3').value = '1.35';
+    if (document.getElementById('editStdBW_M4')) document.getElementById('editStdBW_M4').value = 1700;
+    if (document.getElementById('editStdFCR_M4')) document.getElementById('editStdFCR_M4').value = '1.49';
+  }
+}
+
+// ================= MODAL EDIT TARGET STANDAR =================
+function openModalEditStandar() {
+  if (!activeFlok) return;
+  const std = activeFlok.standar_mingguan || {
+    m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
+    m2: { umur: 14, std_bw_gram: 475, std_fcr: 1.18 },
+    m3: { umur: 21, std_bw_gram: 1020, std_fcr: 1.38 },
+    m4: { umur: 28, std_bw_gram: 1650, std_fcr: 1.52 }
+  };
+
+  if (document.getElementById('editStdBW_M1')) document.getElementById('editStdBW_M1').value = std.m1?.std_bw_gram || 185;
+  if (document.getElementById('editStdFCR_M1')) document.getElementById('editStdFCR_M1').value = Number(std.m1?.std_fcr || 0.90).toFixed(2);
+  if (document.getElementById('editStdBW_M2')) document.getElementById('editStdBW_M2').value = std.m2?.std_bw_gram || 475;
+  if (document.getElementById('editStdFCR_M2')) document.getElementById('editStdFCR_M2').value = Number(std.m2?.std_fcr || 1.18).toFixed(2);
+  if (document.getElementById('editStdBW_M3')) document.getElementById('editStdBW_M3').value = std.m3?.std_bw_gram || 1020;
+  if (document.getElementById('editStdFCR_M3')) document.getElementById('editStdFCR_M3').value = Number(std.m3?.std_fcr || 1.38).toFixed(2);
+  if (document.getElementById('editStdBW_M4')) document.getElementById('editStdBW_M4').value = std.m4?.std_bw_gram || 1650;
+  if (document.getElementById('editStdFCR_M4')) document.getElementById('editStdFCR_M4').value = Number(std.m4?.std_fcr || 1.52).toFixed(2);
+
+  const modal = document.getElementById('modalEditStandar');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeModalEditStandar() {
+  const modal = document.getElementById('modalEditStandar');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function saveEditedStandar() {
+  if (!activeFlok) return;
+
+  const m1BW = parseFloat(document.getElementById('editStdBW_M1')?.value) || 185;
+  const m1FCR = parseFloat(document.getElementById('editStdFCR_M1')?.value) || 0.90;
+  const m2BW = parseFloat(document.getElementById('editStdBW_M2')?.value) || 475;
+  const m2FCR = parseFloat(document.getElementById('editStdFCR_M2')?.value) || 1.18;
+  const m3BW = parseFloat(document.getElementById('editStdBW_M3')?.value) || 1020;
+  const m3FCR = parseFloat(document.getElementById('editStdFCR_M3')?.value) || 1.38;
+  const m4BW = parseFloat(document.getElementById('editStdBW_M4')?.value) || 1650;
+  const m4FCR = parseFloat(document.getElementById('editStdFCR_M4')?.value) || 1.52;
+
+  activeFlok.standar_mingguan = {
+    m1: { umur: 7, std_bw_gram: m1BW, std_fcr: m1FCR },
+    m2: { umur: 14, std_bw_gram: m2BW, std_fcr: m2FCR },
+    m3: { umur: 21, std_bw_gram: m3BW, std_fcr: m3FCR },
+    m4: { umur: 28, std_bw_gram: m4BW, std_fcr: m4FCR }
+  };
+
+  try {
+    await FlokioDB.saveFlok(activeFlok);
+  } catch (err) {
+    console.error('Gagal update standar mingguan:', err);
+  }
+
+  closeModalEditStandar();
+  renderRekapTable();
+  showToast('🎯 Target Standar 4 Minggu Berhasil Diperbarui!');
+}
+
 // ================= MODAL CHICK-IN FLOK BARU =================
 function openModalChickin() {
   const nextNum = (activeFlok ? activeFlok.nomor_flok : 4) + 1;
@@ -1082,6 +1475,8 @@ function openModalChickin() {
 
   const inputDate = document.getElementById('inputChickinDate');
   if (inputDate) inputDate.value = new Date().toISOString().split('T')[0];
+
+  applyPresetStd('cobb');
 
   document.getElementById('modalChickin').classList.remove('hidden');
 }
@@ -1099,6 +1494,15 @@ async function submitChickin() {
   const jenisPakan = document.getElementById('inputChickinJenisPakan').value || 'BP-1 (Starter)';
   const strain = document.getElementById('inputChickinStrain').value || 'Cobb 500';
 
+  const m1BW = parseFloat(document.getElementById('inputStdBW_M1')?.value) || 185;
+  const m1FCR = parseFloat(document.getElementById('inputStdFCR_M1')?.value) || 0.90;
+  const m2BW = parseFloat(document.getElementById('inputStdBW_M2')?.value) || 475;
+  const m2FCR = parseFloat(document.getElementById('inputStdFCR_M2')?.value) || 1.18;
+  const m3BW = parseFloat(document.getElementById('inputStdBW_M3')?.value) || 1020;
+  const m3FCR = parseFloat(document.getElementById('inputStdFCR_M3')?.value) || 1.38;
+  const m4BW = parseFloat(document.getElementById('inputStdBW_M4')?.value) || 1650;
+  const m4FCR = parseFloat(document.getElementById('inputStdFCR_M4')?.value) || 1.52;
+
   const newFlokId = `flok_${activeKandangId}_${flokNum}`;
 
   const newFlok = {
@@ -1112,16 +1516,20 @@ async function submitChickin() {
     status_siklus: 'berjalan',
     stok_pakan_awal_kg: stokPakan,
     jenis_pakan_awal: jenisPakan,
+    standar_mingguan: {
+      m1: { umur: 7, std_bw_gram: m1BW, std_fcr: m1FCR },
+      m2: { umur: 14, std_bw_gram: m2BW, std_fcr: m2FCR },
+      m3: { umur: 21, std_bw_gram: m3BW, std_fcr: m3FCR },
+      m4: { umur: 28, std_bw_gram: m4BW, std_fcr: m4FCR }
+    },
     panen_jarang: [],
     panen_total: null
   };
 
   try {
     await FlokioDB.saveFlok(newFlok);
-    // Bersihkan catatan lama flok ini jika ada
     await FlokioDB.clearDailyLogsByFlok(newFlokId);
 
-    // Update status kandang
     const kandang = await FlokioDB.getKandang(activeKandangId);
     if (kandang) {
       kandang.status = 'aktif';
@@ -1150,7 +1558,6 @@ function openModalPanen() {
   const metrics = computeFlokMetrics(activeFlok, dailyLogs);
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Set default form jarang
   const inJarangTgl = document.getElementById('inputPanenJarangDate');
   if (inJarangTgl) inJarangTgl.value = todayStr;
   const inJarangUmur = document.getElementById('inputPanenJarangUmur');
@@ -1158,7 +1565,6 @@ function openModalPanen() {
   const inJarangEkor = document.getElementById('inputPanenJarangEkor');
   if (inJarangEkor) inJarangEkor.value = Math.min(1000, Math.floor(metrics.sisaAyam * 0.3));
 
-  // Set default form total
   const inTotalTgl = document.getElementById('inputPanenTotalDate');
   if (inTotalTgl) inTotalTgl.value = todayStr;
   const inTotalUmur = document.getElementById('inputPanenTotalUmur');
@@ -1220,7 +1626,6 @@ async function submitPanen() {
   if (!activeFlok) return;
 
   if (panenMode === 'jarang') {
-    // 1. Eksekusi Panen Jarang
     const tgl = document.getElementById('inputPanenJarangDate').value;
     const umur = parseInt(document.getElementById('inputPanenJarangUmur').value) || 28;
     const ekor = parseInt(document.getElementById('inputPanenJarangEkor').value) || 0;
@@ -1249,7 +1654,6 @@ async function submitPanen() {
     showToast(`Panen Jarang ${ekor.toLocaleString('id-ID')} ekor (${totalKg} kg) berhasil dicatat!`);
 
   } else {
-    // 2. Eksekusi Panen Total & Hitung IP Resmi
     const tglTotal = document.getElementById('inputPanenTotalDate').value;
     const umurTotal = parseInt(document.getElementById('inputPanenTotalUmur').value) || 34;
     const ekorTotal = parseInt(document.getElementById('inputPanenTotalEkor').value) || 0;
@@ -1264,7 +1668,6 @@ async function submitPanen() {
 
     const metrics = computeFlokMetrics(activeFlok, dailyLogs);
 
-    // Kalkulasi Total Siklus (Panen Jarang + Panen Total)
     const panenJarangEkor = metrics.totalPanenJarangEkor;
     const panenJarangKg = metrics.totalPanenJarangKg;
 
@@ -1278,7 +1681,6 @@ async function submitPanen() {
     const deplesiAkhirPct = populasiAwal > 0 ? (((populasiAwal - totalEkorTerpanen) / populasiAwal) * 100) : 0;
     const livabilityPct = Math.max(0, 100 - deplesiAkhirPct);
 
-    // Umur Panen Rata-rata
     let weightedUmur = 0;
     (activeFlok.panen_jarang || []).forEach(pj => {
       weightedUmur += (pj.umur_hari * pj.ekor);
@@ -1287,13 +1689,11 @@ async function submitPanen() {
     const avgUmurPanen = totalEkorTerpanen > 0 ? (weightedUmur / totalEkorTerpanen) : umurTotal;
 
     // FORMULA RESMI INDEKS PERFORMA (IP):
-    // IP = ((Daya Hidup % * Bobot Rata-rata kg) / (FCR * Umur Rata-rata)) * 100
     let ipOfficial = 0;
     if (fcrFinal > 0 && avgUmurPanen > 0) {
       ipOfficial = Math.round(((livabilityPct * bobotRataRataKg) / (fcrFinal * avgUmurPanen)) * 100);
     }
 
-    // Predikat IP
     let ipBadgeText = 'Standar (Cukup)';
     if (ipOfficial >= 400) {
       ipBadgeText = '🌟 Istimewa / Super Prima';
@@ -1331,7 +1731,6 @@ async function submitPanen() {
 
     await FlokioDB.saveFlok(activeFlok);
 
-    // Update status kandang ke kosong
     const kandang = await FlokioDB.getKandang(activeKandangId);
     if (kandang) {
       kandang.status = 'kosong';
@@ -1342,7 +1741,6 @@ async function submitPanen() {
     renderAllViews();
     setRole(currentRole);
 
-    // Tampilkan Sertifikat Hasil Panen
     showHarvestCertificate(panenTotalObj);
   }
 }
@@ -1361,7 +1759,6 @@ function showHarvestCertificate(res) {
   document.getElementById('hasilPanenTotalPakan').innerText = `${Number(res.total_pakan_kg).toLocaleString('id-ID')} Kg (${(res.total_pakan_kg / 50).toFixed(0)} Sak)`;
   document.getElementById('hasilPanenFCR').innerText = res.fcr_final;
 
-  // Format Pesan WhatsApp Rekap Panen
   lastHarvestReportText =
 `*🏆 SERTIFIKAT HASIL PANEN FLOK BROILER — FLOKIO*
 Kandang          : Kandang 01 (Flok #${activeFlok.nomor_flok})
@@ -1430,7 +1827,6 @@ async function exportDataBackup() {
   try {
     const jsonStr = await FlokioDB.exportAllData();
 
-    // 1. Download sebagai file JSON
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1441,7 +1837,6 @@ async function exportDataBackup() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    // 2. Salin juga ke clipboard
     try {
       await navigator.clipboard.writeText(jsonStr);
     } catch (_) {}
@@ -1555,7 +1950,6 @@ function getDefaultFeedForAge(age) {
 }
 
 function getDefaultFeedKgForAge(age) {
-  // Kurva estimasi pakan harian standar broiler Cobb 500 (untuk 4500 ekor)
   if (age <= 1) return 35;
   if (age <= 3) return 60;
   if (age <= 7) return 150;

@@ -95,6 +95,12 @@ async function seedInitialData(db) {
     status_siklus: 'berjalan', // 'berjalan' | 'panen'
     stok_pakan_awal_kg: 1500,
     jenis_pakan_awal: 'BP-1 (Starter)',
+    standar_mingguan: {
+      m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
+      m2: { umur: 14, std_bw_gram: 475, std_fcr: 1.18 },
+      m3: { umur: 21, std_bw_gram: 1020, std_fcr: 1.38 },
+      m4: { umur: 28, std_bw_gram: 1650, std_fcr: 1.52 }
+    },
     panen_jarang: [],
     panen_total: null
   });

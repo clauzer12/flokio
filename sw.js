@@ -1,5 +1,5 @@
 // Flokio PWA Service Worker - Offline Cache Strategy
-const CACHE_NAME = 'flokio-cache-v2';
+const CACHE_NAME = 'flokio-cache-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
