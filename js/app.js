@@ -470,7 +470,7 @@ async function checkActivationHash() {
       const ownerData = {
         id: payload.id || ('owner_' + Date.now().toString(36)),
         nama: payload.nama,
-        user: payload.wa,
+        user: payload.user || payload.wa, // Simpan User ID asli (misal: supardi)
         wa: payload.wa,
         pin: payload.pin,
         farm: payload.farm || 'Peternakan Ayam Flokio',
@@ -492,11 +492,11 @@ async function checkActivationHash() {
 
       switchLoginTab('owner');
       const inputUser = document.getElementById('loginOwnerUser');
-      if (inputUser) inputUser.value = payload.wa;
+      if (inputUser) inputUser.value = payload.user || payload.wa;
       const inputPass = document.getElementById('loginOwnerPass');
       if (inputPass) inputPass.value = payload.pin;
 
-      alert(`🎉 AKUN OWNER RESMI BERHASIL DIAKTIFKAN!\n\nSelamat datang, ${payload.nama}!\nAkun Owner untuk peternakan "${payload.farm}" telah diotorisasi oleh Master Developer (Gua).\n\n📱 No. WhatsApp: ${payload.wa}\n🔑 PIN: ${payload.pin}\n\nSilakan klik tombol "Masuk ke Dashboard Owner" untuk mulai menggunakan Flokio.`);
+      alert(`🎉 AKUN OWNER RESMI BERHASIL DIAKTIFKAN!\n\nSelamat datang, ${payload.nama}!\nAkun Owner untuk peternakan "${payload.farm}" telah diotorisasi oleh Master Developer (Gua).\n\n👤 User ID: ${payload.user || payload.wa} (Bisa huruf besar/kecil saat login)\n📱 No. WhatsApp: ${payload.wa}\n🔑 PIN: ${payload.pin}\n\nSilakan klik tombol "Masuk ke Dashboard Owner" untuk mulai menggunakan Flokio.`);
     }
   } catch (err) {
     console.warn('[Activation] Gagal memproses token aktivasi:', err);
@@ -510,7 +510,7 @@ async function submitLogin(role) {
     const kandangSelect = document.getElementById('loginKandangSelect')?.value || 'k01';
 
     if (!waInput || !pin) {
-      alert('Harap masukkan Nomor WhatsApp dan PIN Anak Kandang!');
+      alert('Harap masukkan Nomor WhatsApp atau Nama Petugas dan PIN Anak Kandang!');
       return;
     }
 
@@ -520,11 +520,24 @@ async function submitLogin(role) {
       return;
     }
 
-    const cleanIn = waInput.replace(/\D/g, '');
+    const cleanInput = waInput.toLowerCase();
+    const cleanDigits = waInput.replace(/\D/g, '');
+
     const matched = list.find(a => {
+      // 1. User ID / Nama Petugas (Case-Insensitive)
+      const userMatch = (a.user && a.user.trim().toLowerCase() === cleanInput) ||
+                        (a.nama && a.nama.replace(/\s+/g, '').toLowerCase() === cleanInput) ||
+                        (a.nama && a.nama.trim().toLowerCase() === cleanInput);
+
+      // 2. Nomor WhatsApp
       const cleanDB = (a.wa || '').replace(/\D/g, '');
-      const waMatch = a.wa === waInput || (cleanDB && cleanIn && cleanDB === cleanIn);
-      return waMatch && a.pin === pin && a.aktif !== false;
+      const waMatch = (cleanDigits.length >= 8 && cleanDB.length >= 8 && (
+        cleanDB === cleanDigits ||
+        cleanDB.replace(/^62/, '0') === cleanDigits.replace(/^62/, '0') ||
+        cleanDB.replace(/^0/, '62') === cleanDigits.replace(/^0/, '62')
+      )) || (a.wa && a.wa.trim() === waInput);
+
+      return (userMatch || waMatch) && a.pin === pin && a.aktif !== false;
     });
 
     if (matched) {
@@ -537,14 +550,14 @@ async function submitLogin(role) {
       navigateTo('beranda');
       showToast(`Login Berhasil! Selamat bertugas, ${matched.nama}.`);
     } else {
-      alert(`⛔ Login Anak Kandang Gagal!\n\nNomor WhatsApp (${waInput}) atau PIN (${pin}) tidak cocok.\n\nAkun anak kandang HANYA DAPAT DIBUAT OLEH OWNER (maksimal 3 akun). Pastikan Owner Anda telah mendaftarkan akun Anda.`);
+      alert(`⛔ Login Anak Kandang Gagal!\n\nNomor WhatsApp atau Nama Petugas (${waInput}) atau PIN (${pin}) tidak cocok.\n\nAkun anak kandang HANYA DAPAT DIBUAT OLEH OWNER (maksimal 3 akun). Pastikan Owner Anda telah mendaftarkan akun Anda.`);
     }
   } else {
     const userInput = document.getElementById('loginOwnerUser')?.value.trim();
     const pass = document.getElementById('loginOwnerPass')?.value.trim();
 
     if (!userInput || !pass) {
-      alert('Harap masukkan Nomor WhatsApp dan PIN Owner!');
+      alert('Harap masukkan User ID atau Nomor WhatsApp dan PIN Owner!');
       return;
     }
 
@@ -554,17 +567,29 @@ async function submitLogin(role) {
       return;
     }
 
-    const cleanIn = userInput.replace(/\D/g, '');
+    const cleanUserInput = userInput.toLowerCase();
+    const cleanDigits = userInput.replace(/\D/g, '');
+
     const matchedOwner = ownersList.find(o => {
-      const cleanDB = (o.wa || '').replace(/\D/g, '');
-      const userMatch = (userInput.toLowerCase() === (o.user || '').toLowerCase()) ||
-                        (cleanDB && cleanIn && cleanDB === cleanIn) ||
-                        (o.wa === userInput);
-      return userMatch;
+      // 1. Cocokkan User ID secara Case-Insensitive (misal: "Supardi" cocok dengan "supardi")
+      const userMatch = o.user && (o.user.trim().toLowerCase() === cleanUserInput);
+
+      // 2. Cocokkan Nama Lengkap tanpa spasi secara Case-Insensitive (misal: "BudiSantoso" cocok dengan "Budi Santoso")
+      const namaMatch = o.nama && (o.nama.replace(/\s+/g, '').toLowerCase() === cleanUserInput);
+
+      // 3. Cocokkan Nomor WhatsApp (mendukung format 08..., 628..., +628..., dan strip)
+      const cleanDBWA = (o.wa || '').replace(/\D/g, '');
+      const waMatch = (cleanDigits.length >= 8 && cleanDBWA.length >= 8 && (
+        cleanDBWA === cleanDigits ||
+        cleanDBWA.replace(/^62/, '0') === cleanDigits.replace(/^62/, '0') ||
+        cleanDBWA.replace(/^0/, '62') === cleanDigits.replace(/^0/, '62')
+      )) || (o.wa && o.wa.trim() === userInput);
+
+      return (userMatch || namaMatch || waMatch);
     });
 
     if (!matchedOwner) {
-      alert(`⛔ AKSES DITOLAK!\n\nAkun "${userInput}" tidak terdaftar sebagai Owner yang sah.\n\nAkun Owner HANYA BISA DIGUNAKAN ketika sudah dibuat oleh Master Developer (Gua) di Dashboard Khusus Master.`);
+      alert(`⛔ AKSES DITOLAK!\n\nUser ID atau Nomor WhatsApp "${userInput}" tidak terdaftar sebagai Owner yang sah.\n\nAkun Owner HANYA BISA DIGUNAKAN ketika sudah dibuat oleh Master Developer (Gua) di Dashboard Khusus Master.\n\nCatatan: Ejaan User ID tidak case-sensitif (bisa huruf besar maupun kecil).`);
       return;
     }
 
@@ -669,7 +694,7 @@ async function renderMasterDashboard() {
                 ${isActive ? '🟢 Aktif' : '🔴 Nonaktif'}
               </span>
             </div>
-            <p class="text-[11px] text-slate-500">Login: <strong>${owner.user || owner.wa}</strong> • PIN: <strong class="font-mono text-slate-800">${owner.pin}</strong></p>
+            <p class="text-[11px] text-slate-500">User ID: <strong class="text-blue-700 font-mono">${owner.user || '-'}</strong> • WA: <strong class="font-mono">${owner.wa || '-'}</strong> • PIN: <strong class="font-mono text-slate-800">${owner.pin}</strong></p>
             ${owner.farm ? `<p class="text-[10px] text-slate-400">Farm: ${owner.farm}</p>` : ''}
           </div>
         </div>
@@ -694,12 +719,20 @@ async function renderMasterDashboard() {
 
 async function submitCreateOwnerMaster() {
   const nama = document.getElementById('inputMasterNamaOwner')?.value.trim();
-  const user = document.getElementById('inputMasterUserOwner')?.value.trim();
+  const userRaw = document.getElementById('inputMasterUserOwner')?.value.trim();
+  const wa = (document.getElementById('inputMasterWAOwner')?.value || userRaw || '').trim();
   const pin = document.getElementById('inputMasterPinOwner')?.value.trim();
   const farm = document.getElementById('inputMasterFarmOwner')?.value.trim();
 
-  if (!nama || !user || !pin) {
-    alert('Harap lengkapi Nama Lengkap, Email/No. WhatsApp, dan PIN Owner!');
+  if (!nama || !userRaw || !wa || !pin) {
+    alert('Harap lengkapi Nama Lengkap, User ID, Nomor WhatsApp, dan PIN Owner!');
+    return;
+  }
+
+  // Bersihkan User ID (tanpa spasi)
+  const user = userRaw.replace(/\s+/g, '');
+  if (user.length < 3) {
+    alert('User ID minimal 3 karakter (tanpa spasi)!');
     return;
   }
 
@@ -710,23 +743,27 @@ async function submitCreateOwnerMaster() {
 
   const ownersList = (await FlokioDB.getSetting('owner_accounts_list')) || [];
 
-  // Validasi user/WA duplikat
-  const cleanIn = user.replace(/\D/g, '');
-  const isDuplicate = ownersList.some(o => {
-    const cleanDB = (o.wa || '').replace(/\D/g, '');
-    return (o.user || '').toLowerCase() === user.toLowerCase() || (cleanDB && cleanDB === cleanIn);
-  });
+  // Validasi duplikasi User ID (Case-Insensitive)
+  const userLower = user.toLowerCase();
+  const existUser = ownersList.find(o => (o.user || '').toLowerCase() === userLower);
+  if (existUser) {
+    alert(`❌ User ID "${user}" sudah dipakai oleh Owner "${existUser.nama}"!\nSilakan gunakan User ID lain.`);
+    return;
+  }
 
-  if (isDuplicate) {
-    alert(`Akun Owner dengan kredensial "${user}" sudah pernah dibuat! Gunakan email/no. WA yang berbeda.`);
+  // Validasi duplikasi nomor WA
+  const cleanWA = wa.replace(/\D/g, '');
+  const existWA = cleanWA.length >= 8 && ownersList.find(o => (o.wa || '').replace(/\D/g, '') === cleanWA);
+  if (existWA) {
+    alert(`❌ Nomor WhatsApp (${wa}) sudah terdaftar untuk Owner "${existWA.nama}"!`);
     return;
   }
 
   const newOwner = {
     id: `owner_${Date.now()}`,
     nama: nama,
-    user: user,
-    wa: user,
+    user: user, // User ID (misal: supardi)
+    wa: wa,     // Nomor WhatsApp (misal: 081234567899)
     pin: pin,
     farm: farm || 'Flokio Broiler Farm',
     aktif: true,
@@ -740,6 +777,7 @@ async function submitCreateOwnerMaster() {
   // Reset form
   if (document.getElementById('inputMasterNamaOwner')) document.getElementById('inputMasterNamaOwner').value = '';
   if (document.getElementById('inputMasterUserOwner')) document.getElementById('inputMasterUserOwner').value = '';
+  if (document.getElementById('inputMasterWAOwner')) document.getElementById('inputMasterWAOwner').value = '';
   if (document.getElementById('inputMasterPinOwner')) document.getElementById('inputMasterPinOwner').value = '';
   if (document.getElementById('inputMasterFarmOwner')) document.getElementById('inputMasterFarmOwner').value = '';
 
@@ -998,9 +1036,9 @@ async function renderLoginQuickAccess() {
   // Akun Owner Sah yang telah dibuat oleh Gua
   activeOwners.forEach(owner => {
     html += `
-      <button type="button" onclick="selectLoginAccount('owner', '${owner.wa || owner.user}', '${owner.pin}')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all text-left">
+      <button type="button" onclick="selectLoginAccount('owner', '${owner.user || owner.wa}', '${owner.pin}')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all text-left">
         <span class="text-xs font-bold text-slate-800 block">👨‍💼 ${owner.nama.split(' ')[0]} (Owner)</span>
-        <span class="text-[10px] text-slate-500 font-mono">Farm: ${owner.farm || 'Flok'}</span>
+        <span class="text-[10px] text-slate-500 font-mono">User: ${owner.user || owner.wa}</span>
       </button>
     `;
   });
