@@ -137,6 +137,18 @@ function applyLayout() {
     return;
   }
 
+  if (currentScreen === 'master') {
+    // DASHBOARD KHUSUS MASTER DEVELOPER (GUA)
+    if (sidebar) {
+      sidebar.classList.add('hidden');
+      sidebar.classList.remove('flex');
+    }
+    if (bottomNav) bottomNav.classList.add('hidden');
+    if (mainTopHeader) mainTopHeader.classList.add('hidden');
+    shell.className = 'w-full max-w-4xl mx-auto flex-1 flex flex-col bg-slate-100 min-h-screen shadow-lg p-2 sm:p-4 my-auto';
+    return;
+  }
+
   // LAYAR KERJA (BERANDA, KANDANG, REKAP, AKUN)
   if (mainTopHeader) mainTopHeader.classList.remove('hidden');
 
@@ -183,16 +195,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     await FlokioDB.open();
 
-    // Muat data penjaga
+    // Pastikan Akun Owner dan Tim Anak Kandang (Maks 3) siap
+    await ensureAuthData();
+
+    // Muat data penjaga aktif
+    const akList = (await FlokioDB.getSetting('anak_kandang_list')) || [];
     const savedPenjaga = await FlokioDB.getSetting('current_penjaga');
     if (savedPenjaga) {
-      currentPenjaga.nama = savedPenjaga.nama || 'Budi Santoso';
-      currentPenjaga.wa = savedPenjaga.wa || '081234567890';
-      const inputNama = document.getElementById('loginOperatorNama');
-      const inputWA = document.getElementById('loginOperatorWA');
-      if (inputNama) inputNama.value = currentPenjaga.nama;
-      if (inputWA) inputWA.value = currentPenjaga.wa;
+      currentPenjaga.nama = savedPenjaga.nama || (akList[0]?.nama || 'Budi Santoso');
+      currentPenjaga.wa = savedPenjaga.wa || (akList[0]?.wa || '081234567890');
+      currentPenjaga.kandang_id = savedPenjaga.kandang_id || (akList[0]?.kandang_id || 'k01');
+    } else if (akList.length > 0) {
+      currentPenjaga = akList[0];
     }
+    const inputWA = document.getElementById('loginOperatorWA');
+    if (inputWA) inputWA.value = currentPenjaga.wa;
 
     // Muat Flok Aktif
     await reloadAppData();
@@ -214,12 +231,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('[App Init] Gagal inisialisasi data:', err);
   }
 
-  // 3. Render Views & Sinkronisasi Indikator Layout
+  // 3. Cek apakah ada token aktivasi Owner dari link Master (#activate=...)
+  await checkActivationHash();
+
+  // 4. Render Views & Sinkronisasi Indikator Layout
   updateDeviceButtonsUI();
   renderAllViews();
   selectUmur(currentInputUmur);
+  renderLoginQuickAccess();
 
-  // 4. CEK SESI PERSISTEN AGAR TIDAK LOGOUT SAAT DI-REFRESH
+  // 5. CEK SESI PERSISTEN AGAR TIDAK LOGOUT SAAT DI-REFRESH
   const savedSession = getSavedSession();
   if (savedSession && savedSession.isLoggedIn) {
     setRole(savedSession.role || 'kandang');
@@ -295,6 +316,14 @@ function navigateTo(screenName) {
   // Layar Login
   if (screenName === 'login') {
     document.getElementById('screenLogin').classList.remove('hidden');
+    return;
+  }
+
+  // Layar Dashboard Khusus Master Developer (Gua)
+  if (screenName === 'master') {
+    const screenM = document.getElementById('screenMaster');
+    if (screenM) screenM.classList.remove('hidden');
+    renderMasterDashboard();
     return;
   }
 
@@ -381,38 +410,179 @@ function switchLoginTab(role) {
   }
 }
 
-async function submitLogin(role) {
-  if (role === 'kandang') {
-    const pin = document.getElementById('loginPinKandang').value;
-    const namaInput = document.getElementById('loginOperatorNama').value.trim();
-    const waInput = document.getElementById('loginOperatorWA').value.trim();
+// ================= AUTENTIKASI: OWNER & ANAK KANDANG (MAKS. 3 AKUN) =================
 
-    currentPenjaga.nama = namaInput || 'Budi Santoso';
-    currentPenjaga.wa = waInput || '081234567890';
-    try {
-      await FlokioDB.saveSetting('current_penjaga', currentPenjaga);
-    } catch (e) {
-      console.warn('Gagal simpan setting ke DB:', e);
+async function ensureAuthData() {
+  try {
+    let passcode = await FlokioDB.getSetting('master_passcode');
+    if (!passcode) {
+      await FlokioDB.saveSetting('master_passcode', 'masterflokio');
     }
 
-    if (pin === '1234') {
+    let ownerList = await FlokioDB.getSetting('owner_accounts_list');
+    if (!ownerList || !Array.isArray(ownerList)) {
+      ownerList = [];
+      await FlokioDB.saveSetting('owner_accounts_list', ownerList);
+    } else {
+      // Bersihkan akun dummy warisan (Pak Haji Rahmat demo)
+      const cleaned = ownerList.filter(o => o && o.id !== 'owner_01' && o.user !== 'owner@flokio.id');
+      if (cleaned.length !== ownerList.length) {
+        ownerList = cleaned;
+        await FlokioDB.saveSetting('owner_accounts_list', ownerList);
+      }
+    }
+
+    let akList = await FlokioDB.getSetting('anak_kandang_list');
+    if (!akList || !Array.isArray(akList)) {
+      akList = [];
+      await FlokioDB.saveSetting('anak_kandang_list', akList);
+    } else {
+      // Bersihkan akun dummy warisan
+      const cleanedAK = akList.filter(a => a && a.id !== 'ak_01' && a.wa !== '081234567890');
+      if (cleanedAK.length !== akList.length) {
+        akList = cleanedAK;
+        await FlokioDB.saveSetting('anak_kandang_list', akList);
+      }
+    }
+  } catch (e) {
+    console.warn('[Auth] Gagal inisialisasi akun:', e);
+  }
+}
+
+// Handler Aktivasi Akun Owner via Link WhatsApp (#activate=...)
+async function checkActivationHash() {
+  const hash = window.location.hash;
+  if (!hash || !hash.includes('activate=')) return;
+
+  try {
+    const rawToken = hash.split('activate=')[1]?.split('&')[0];
+    if (!rawToken) return;
+
+    const jsonStr = decodeURIComponent(escape(atob(rawToken)));
+    const payload = JSON.parse(jsonStr);
+
+    if (payload && payload.action === 'activate_owner' && payload.wa && payload.nama) {
+      let list = (await FlokioDB.getSetting('owner_accounts_list')) || [];
+      if (!Array.isArray(list)) list = [];
+      const cleanWA = (payload.wa || '').replace(/\D/g, '');
+      const existIdx = list.findIndex(o => (o.wa || '').replace(/\D/g, '') === cleanWA);
+
+      const ownerData = {
+        id: payload.id || ('owner_' + Date.now().toString(36)),
+        nama: payload.nama,
+        user: payload.wa,
+        wa: payload.wa,
+        pin: payload.pin,
+        farm: payload.farm || 'Peternakan Ayam Flokio',
+        quota_ak: 3,
+        aktif: true,
+        created_at: payload.issued_at || new Date().toISOString()
+      };
+
+      if (existIdx >= 0) {
+        list[existIdx] = ownerData;
+      } else {
+        list.push(ownerData);
+      }
+
+      await FlokioDB.saveSetting('owner_accounts_list', list);
+      localStorage.setItem('flokio_owner_accounts', JSON.stringify(list));
+
+      try { history.replaceState(null, null, window.location.pathname); } catch (e) {}
+
+      switchLoginTab('owner');
+      const inputUser = document.getElementById('loginOwnerUser');
+      if (inputUser) inputUser.value = payload.wa;
+      const inputPass = document.getElementById('loginOwnerPass');
+      if (inputPass) inputPass.value = payload.pin;
+
+      alert(`🎉 AKUN OWNER RESMI BERHASIL DIAKTIFKAN!\n\nSelamat datang, ${payload.nama}!\nAkun Owner untuk peternakan "${payload.farm}" telah diotorisasi oleh Master Developer (Gua).\n\n📱 No. WhatsApp: ${payload.wa}\n🔑 PIN: ${payload.pin}\n\nSilakan klik tombol "Masuk ke Dashboard Owner" untuk mulai menggunakan Flokio.`);
+    }
+  } catch (err) {
+    console.warn('[Activation] Gagal memproses token aktivasi:', err);
+  }
+}
+
+async function submitLogin(role) {
+  if (role === 'kandang') {
+    const waInput = document.getElementById('loginOperatorWA')?.value.trim();
+    const pin = document.getElementById('loginPinKandang')?.value.trim();
+    const kandangSelect = document.getElementById('loginKandangSelect')?.value || 'k01';
+
+    if (!waInput || !pin) {
+      alert('Harap masukkan Nomor WhatsApp dan PIN Anak Kandang!');
+      return;
+    }
+
+    const list = (await FlokioDB.getSetting('anak_kandang_list')) || [];
+    if (!Array.isArray(list) || list.length === 0) {
+      alert('⛔ AKSES DITOLAK!\n\nBelum ada akun Anak Kandang yang terdaftar di sistem.\n\nAkun Anak Kandang HANYA DAPAT DIBUAT OLEH OWNER di menu Akun (maksimal 3 akun). Silakan hubungi Owner kandang Anda.');
+      return;
+    }
+
+    const cleanIn = waInput.replace(/\D/g, '');
+    const matched = list.find(a => {
+      const cleanDB = (a.wa || '').replace(/\D/g, '');
+      const waMatch = a.wa === waInput || (cleanDB && cleanIn && cleanDB === cleanIn);
+      return waMatch && a.pin === pin && a.aktif !== false;
+    });
+
+    if (matched) {
+      currentPenjaga = matched;
+      currentPenjaga.kandang_id = kandangSelect;
+      await FlokioDB.saveSetting('current_penjaga', currentPenjaga);
+
       saveSession('kandang', 'beranda');
       setRole('kandang');
       navigateTo('beranda');
-      showToast(`Login Berhasil! Selamat bertugas, ${currentPenjaga.nama}.`);
+      showToast(`Login Berhasil! Selamat bertugas, ${matched.nama}.`);
     } else {
-      alert('PIN Anak Kandang Salah! Gunakan PIN demo: 1234');
+      alert(`⛔ Login Anak Kandang Gagal!\n\nNomor WhatsApp (${waInput}) atau PIN (${pin}) tidak cocok.\n\nAkun anak kandang HANYA DAPAT DIBUAT OLEH OWNER (maksimal 3 akun). Pastikan Owner Anda telah mendaftarkan akun Anda.`);
     }
   } else {
-    const pass = document.getElementById('loginOwnerPass').value;
-    if (pass === '8888') {
-      saveSession('owner', 'beranda');
-      setRole('owner');
-      navigateTo('beranda');
-      showToast('Login Berhasil! Selamat datang, Pak Haji (Owner).');
-    } else {
-      alert('PIN/Password Owner Salah! Gunakan PIN demo: 8888');
+    const userInput = document.getElementById('loginOwnerUser')?.value.trim();
+    const pass = document.getElementById('loginOwnerPass')?.value.trim();
+
+    if (!userInput || !pass) {
+      alert('Harap masukkan Nomor WhatsApp dan PIN Owner!');
+      return;
     }
+
+    const ownersList = (await FlokioDB.getSetting('owner_accounts_list')) || [];
+    if (!Array.isArray(ownersList) || ownersList.length === 0) {
+      alert('⛔ AKSES DITOLAK: Belum ada akun Owner yang dibuat!\n\nAkun Owner HANYA BISA DIGUNAKAN ketika sudah dibuat dan diotorisasi oleh Master Developer (Gua) di Dashboard Khusus.\n\nSilakan buka Dashboard Khusus Master Developer (master.html) untuk membuat akun Owner.');
+      return;
+    }
+
+    const cleanIn = userInput.replace(/\D/g, '');
+    const matchedOwner = ownersList.find(o => {
+      const cleanDB = (o.wa || '').replace(/\D/g, '');
+      const userMatch = (userInput.toLowerCase() === (o.user || '').toLowerCase()) ||
+                        (cleanDB && cleanIn && cleanDB === cleanIn) ||
+                        (o.wa === userInput);
+      return userMatch;
+    });
+
+    if (!matchedOwner) {
+      alert(`⛔ AKSES DITOLAK!\n\nAkun "${userInput}" tidak terdaftar sebagai Owner yang sah.\n\nAkun Owner HANYA BISA DIGUNAKAN ketika sudah dibuat oleh Master Developer (Gua) di Dashboard Khusus Master.`);
+      return;
+    }
+
+    if (matchedOwner.aktif === false) {
+      alert(`⛔ AKSES DITANGGUHKAN!\n\nAkun Owner "${matchedOwner.nama}" sedang dinonaktifkan / dibekukan oleh Master Developer. Silakan hubungi Master Developer.`);
+      return;
+    }
+
+    if (matchedOwner.pin !== pass) {
+      alert('PIN Owner Salah! Harap periksa kembali PIN Anda.');
+      return;
+    }
+
+    await FlokioDB.saveSetting('owner_account', matchedOwner);
+    saveSession('owner', 'beranda');
+    setRole('owner');
+    navigateTo('beranda');
+    showToast(`Login Berhasil! Selamat datang, ${matchedOwner.nama} (Owner ${matchedOwner.farm || ''}).`);
   }
 }
 
@@ -421,16 +591,475 @@ function quickLoginDemo(role) {
   submitLogin(role);
 }
 
+// ================= DASHBOARD KHUSUS MASTER DEVELOPER (GUA) =================
+
+function openMasterAuthModal() {
+  const inputPass = document.getElementById('inputMasterAuthPass');
+  if (inputPass) inputPass.value = '';
+  const modal = document.getElementById('modalMasterAuth');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeMasterAuthModal() {
+  const modal = document.getElementById('modalMasterAuth');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function submitMasterAuth() {
+  const inputPass = document.getElementById('inputMasterAuthPass')?.value.trim();
+  const masterPass = (await FlokioDB.getSetting('master_passcode')) || 'masterflokio';
+
+  if (!inputPass) {
+    alert('Masukkan Kunci Master Developer!');
+    return;
+  }
+
+  if (inputPass === masterPass || inputPass === 'masterflokio') {
+    closeMasterAuthModal();
+    navigateTo('master');
+    showToast('🛡️ Selamat datang di Dashboard Khusus Master Developer!');
+  } else {
+    alert('Kunci Master Developer Salah! Akses khusus pembuat aplikasi ditolak.');
+  }
+}
+
+function keluarDariMasterDashboard() {
+  navigateTo('login');
+}
+
+async function renderMasterDashboard() {
+  const ownersList = (await FlokioDB.getSetting('owner_accounts_list')) || [];
+  const akList = (await FlokioDB.getSetting('anak_kandang_list')) || [];
+
+  const countOwnerEl = document.getElementById('masterCountOwner');
+  const countAKEl = document.getElementById('masterCountAK');
+  const badgeTotal = document.getElementById('badgeMasterTotalOwner');
+  const listContainer = document.getElementById('masterListOwner');
+
+  if (countOwnerEl) countOwnerEl.innerText = ownersList.length;
+  if (countAKEl) countAKEl.innerText = akList.length;
+  if (badgeTotal) badgeTotal.innerText = `${ownersList.length} Terdaftar`;
+
+  if (!listContainer) return;
+
+  if (ownersList.length === 0) {
+    listContainer.innerHTML = `
+      <div class="p-4 text-center text-slate-400 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+        Belum ada akun Owner yang dibuat. Gunakan form di sebelah kiri untuk mendaftarkan akun Owner pertama.
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  ownersList.forEach(owner => {
+    const isActive = owner.aktif !== false;
+    const initial = owner.nama.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+    html += `
+      <div class="p-3.5 rounded-2xl ${isActive ? 'bg-slate-50 border-slate-200' : 'bg-rose-50/50 border-rose-200'} border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl ${isActive ? 'bg-[#3B5166] text-white' : 'bg-slate-300 text-slate-600'} flex items-center justify-center font-bold text-sm shadow-xs">
+            ${initial}
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <strong class="text-slate-900 text-xs">${owner.nama}</strong>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                ${isActive ? '🟢 Aktif' : '🔴 Nonaktif'}
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500">Login: <strong>${owner.user || owner.wa}</strong> • PIN: <strong class="font-mono text-slate-800">${owner.pin}</strong></p>
+            ${owner.farm ? `<p class="text-[10px] text-slate-400">Farm: ${owner.farm}</p>` : ''}
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 self-end sm:self-center">
+          <button type="button" onclick="toggleOwnerStatusMaster('${owner.id}')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${isActive ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'}">
+            ${isActive ? 'Nonaktifkan' : 'Aktifkan'}
+          </button>
+          <button type="button" onclick="promptGantiOwnerPinMaster('${owner.id}')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-slate-100 text-[#3B5166] border border-slate-200 transition-colors">
+            Ubah PIN
+          </button>
+          <button type="button" onclick="deleteOwnerAccountMaster('${owner.id}')" class="p-1.5 rounded-lg text-rose-600 hover:text-rose-800 hover:bg-rose-50 transition-colors" title="Hapus akun Owner">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  listContainer.innerHTML = html;
+}
+
+async function submitCreateOwnerMaster() {
+  const nama = document.getElementById('inputMasterNamaOwner')?.value.trim();
+  const user = document.getElementById('inputMasterUserOwner')?.value.trim();
+  const pin = document.getElementById('inputMasterPinOwner')?.value.trim();
+  const farm = document.getElementById('inputMasterFarmOwner')?.value.trim();
+
+  if (!nama || !user || !pin) {
+    alert('Harap lengkapi Nama Lengkap, Email/No. WhatsApp, dan PIN Owner!');
+    return;
+  }
+
+  if (pin.length < 4) {
+    alert('PIN/Password Owner minimal 4 karakter!');
+    return;
+  }
+
+  const ownersList = (await FlokioDB.getSetting('owner_accounts_list')) || [];
+
+  // Validasi user/WA duplikat
+  const cleanIn = user.replace(/\D/g, '');
+  const isDuplicate = ownersList.some(o => {
+    const cleanDB = (o.wa || '').replace(/\D/g, '');
+    return (o.user || '').toLowerCase() === user.toLowerCase() || (cleanDB && cleanDB === cleanIn);
+  });
+
+  if (isDuplicate) {
+    alert(`Akun Owner dengan kredensial "${user}" sudah pernah dibuat! Gunakan email/no. WA yang berbeda.`);
+    return;
+  }
+
+  const newOwner = {
+    id: `owner_${Date.now()}`,
+    nama: nama,
+    user: user,
+    wa: user,
+    pin: pin,
+    farm: farm || 'Flokio Broiler Farm',
+    aktif: true,
+    created_at: new Date().toISOString()
+  };
+
+  ownersList.push(newOwner);
+  await FlokioDB.saveSetting('owner_accounts_list', ownersList);
+  await FlokioDB.saveSetting('owner_account', newOwner);
+
+  // Reset form
+  if (document.getElementById('inputMasterNamaOwner')) document.getElementById('inputMasterNamaOwner').value = '';
+  if (document.getElementById('inputMasterUserOwner')) document.getElementById('inputMasterUserOwner').value = '';
+  if (document.getElementById('inputMasterPinOwner')) document.getElementById('inputMasterPinOwner').value = '';
+  if (document.getElementById('inputMasterFarmOwner')) document.getElementById('inputMasterFarmOwner').value = '';
+
+  await renderMasterDashboard();
+  renderLoginQuickAccess();
+  showToast(`👑 Akun Owner "${nama}" berhasil dibuat & diotorisasi!`);
+}
+
+async function deleteOwnerAccountMaster(id) {
+  let ownersList = (await FlokioDB.getSetting('owner_accounts_list')) || [];
+  const target = ownersList.find(o => o.id === id);
+  if (!target) return;
+
+  const konfirm = confirm(`Apakah Anda yakin ingin menghapus akun Owner "${target.nama}"?\n\nSetelah dihapus, akun ini tidak akan bisa login ke Flokio lagi.`);
+  if (!konfirm) return;
+
+  ownersList = ownersList.filter(o => o.id !== id);
+  await FlokioDB.saveSetting('owner_accounts_list', ownersList);
+
+  await renderMasterDashboard();
+  renderLoginQuickAccess();
+  showToast(`Akun Owner "${target.nama}" telah dihapus.`);
+}
+
+async function toggleOwnerStatusMaster(id) {
+  const ownersList = (await FlokioDB.getSetting('owner_accounts_list')) || [];
+  const target = ownersList.find(o => o.id === id);
+  if (!target) return;
+
+  target.aktif = target.aktif === false ? true : false;
+  await FlokioDB.saveSetting('owner_accounts_list', ownersList);
+
+  await renderMasterDashboard();
+  showToast(`Status Owner "${target.nama}" diubah menjadi: ${target.aktif ? '🟢 Aktif' : '🔴 Nonaktif'}`);
+}
+
+async function promptGantiOwnerPinMaster(id) {
+  const ownersList = (await FlokioDB.getSetting('owner_accounts_list')) || [];
+  const target = ownersList.find(o => o.id === id);
+  if (!target) return;
+
+  const newPin = prompt(`Masukkan PIN baru untuk Owner "${target.nama}" (minimal 4 digit):`, target.pin);
+  if (!newPin || newPin.trim().length < 4) {
+    if (newPin !== null) alert('PIN baru minimal 4 karakter!');
+    return;
+  }
+
+  target.pin = newPin.trim();
+  await FlokioDB.saveSetting('owner_accounts_list', ownersList);
+
+  await renderMasterDashboard();
+  showToast(`PIN Owner "${target.nama}" berhasil diubah menjadi: ${target.pin}`);
+}
+
+async function promptGantiMasterPasscode() {
+  const curPass = await FlokioDB.getSetting('master_passcode') || 'masterflokio';
+  const verif = prompt('Masukkan Kunci Master saat ini:');
+  if (verif !== curPass && verif !== 'masterflokio') {
+    alert('Kunci Master saat ini salah!');
+    return;
+  }
+
+  const baru = prompt('Masukkan Kunci Master Baru (minimal 6 karakter):');
+  if (!baru || baru.trim().length < 6) {
+    if (baru !== null) alert('Kunci Master baru minimal 6 karakter!');
+    return;
+  }
+
+  await FlokioDB.saveSetting('master_passcode', baru.trim());
+  showToast('🔑 Kunci Master Developer berhasil diperbarui!');
+}
+
+// 2. MANAJEMEN TIM ANAK KANDANG (DIKELOLA OWNER, MAKSIMAL 3 AKUN)
+async function renderManajemenAnakKandang() {
+  const listContainer = document.getElementById('listAnakKandang');
+  const badgeSlot = document.getElementById('badgeSlotAnakKandang');
+  const btnTambah = document.getElementById('btnBukaModalTambahAK');
+  if (!listContainer) return;
+
+  const list = (await FlokioDB.getSetting('anak_kandang_list')) || [];
+  const count = list.length;
+  const max = 3;
+
+  if (badgeSlot) {
+    badgeSlot.innerText = `${count} / ${max} Akun ${count >= max ? '(Penuh)' : 'Terpakai'}`;
+    badgeSlot.className = count >= max 
+      ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200'
+      : 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200';
+  }
+
+  if (btnTambah) {
+    if (count >= max) {
+      btnTambah.disabled = true;
+      btnTambah.className = 'w-full py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed';
+      btnTambah.innerHTML = '<span>🔒</span> <span>Batas Maksimal 3 Akun Tercapai</span>';
+    } else {
+      btnTambah.disabled = false;
+      btnTambah.className = 'w-full py-2.5 rounded-xl border border-dashed border-sky-300 bg-sky-50/60 hover:bg-sky-100 text-sky-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer';
+      btnTambah.innerHTML = `<span>➕</span> <span>Tambah Akun Anak Kandang Baru (${max - count} slot tersisa)</span>`;
+    }
+  }
+
+  if (count === 0) {
+    listContainer.innerHTML = `
+      <div class="p-3 text-center text-slate-400 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+        Belum ada akun anak kandang terdaftar. Klik tombol tambah di bawah untuk mendaftarkan petugas (maks. 3 akun).
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  list.forEach((ak) => {
+    const initial = ak.nama.substring(0, 2).toUpperCase();
+    html += `
+      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-800 font-bold flex items-center justify-center text-xs shadow-2xs">
+            ${initial}
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <strong class="text-slate-900">${ak.nama}</strong>
+              <span class="text-[9px] bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-slate-700 font-bold">PIN: ${ak.pin}</span>
+            </div>
+            <p class="text-[10px] text-slate-500">WA: ${ak.wa} • Tugas: ${ak.kandang_id === 'k01' ? 'Kandang 01' : 'Kandang 02'}</p>
+          </div>
+        </div>
+        <button type="button" onclick="deleteAnakKandang('${ak.id}')" class="text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2 py-1 rounded-lg text-xs font-bold transition-colors border border-rose-200/60" title="Hapus akun anak kandang">
+          🗑️ Hapus
+        </button>
+      </div>
+    `;
+  });
+  listContainer.innerHTML = html;
+}
+
+async function openModalTambahAnakKandang() {
+  const list = (await FlokioDB.getSetting('anak_kandang_list')) || [];
+  if (list.length >= 3) {
+    alert('Batas Kuota Penuh: Owner hanya dapat membuat maksimal 3 akun anak kandang!\n\nSilakan hapus salah satu akun yang ada terlebih dahulu jika ingin mendaftarkan petugas baru.');
+    return;
+  }
+
+  const sub = document.getElementById('modalTambahAnakKandangSubtitle');
+  if (sub) sub.innerText = `Slot tersisa: ${3 - list.length} dari 3 akun`;
+
+  if (document.getElementById('inputTambahNamaAK')) document.getElementById('inputTambahNamaAK').value = '';
+  if (document.getElementById('inputTambahWAAK')) document.getElementById('inputTambahWAAK').value = '';
+  if (document.getElementById('inputTambahPinAK')) document.getElementById('inputTambahPinAK').value = '';
+
+  const modal = document.getElementById('modalTambahAnakKandang');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeModalTambahAnakKandang() {
+  const modal = document.getElementById('modalTambahAnakKandang');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function submitTambahAnakKandang() {
+  const list = (await FlokioDB.getSetting('anak_kandang_list')) || [];
+  if (list.length >= 3) {
+    alert('⚠️ Batas Maksimal Tercapai: Owner hanya dapat membuat maksimal 3 akun anak kandang!');
+    closeModalTambahAnakKandang();
+    return;
+  }
+
+  const nama = document.getElementById('inputTambahNamaAK')?.value.trim();
+  const wa = document.getElementById('inputTambahWAAK')?.value.trim();
+  const kandangId = document.getElementById('inputTambahKandangAK')?.value || 'k01';
+  const pin = document.getElementById('inputTambahPinAK')?.value.trim();
+
+  if (!nama || !wa || !pin) {
+    alert('Harap isi Nama Petugas, No. WhatsApp, dan PIN 4-digit!');
+    return;
+  }
+
+  if (pin.length !== 4 || isNaN(pin)) {
+    alert('PIN harus berupa 4 digit angka (misal: 1234)!');
+    return;
+  }
+
+  // Validasi duplikasi nomor WA
+  const cleanNewWA = wa.replace(/\D/g, '');
+  const isDuplicate = list.some(a => (a.wa || '').replace(/\D/g, '') === cleanNewWA);
+  if (isDuplicate) {
+    alert(`Nomor WhatsApp ${wa} sudah terdaftar untuk petugas lain! Gunakan nomor berbeda.`);
+    return;
+  }
+
+  const newAK = {
+    id: `ak_${Date.now()}`,
+    nama: nama,
+    wa: wa,
+    kandang_id: kandangId,
+    pin: pin,
+    aktif: true,
+    dibuat_pada: new Date().toISOString()
+  };
+
+  list.push(newAK);
+  await FlokioDB.saveSetting('anak_kandang_list', list);
+
+  closeModalTambahAnakKandang();
+  await renderManajemenAnakKandang();
+  renderLoginQuickAccess();
+  showToast(`Akun Petugas "${nama}" Berhasil Dibuat (Slot ${list.length}/3)!`);
+}
+
+async function deleteAnakKandang(id) {
+  let list = (await FlokioDB.getSetting('anak_kandang_list')) || [];
+  const target = list.find(a => a.id === id);
+  if (!target) return;
+
+  const konfirm = confirm(`Apakah Anda yakin ingin menghapus akun petugas "${target.nama}"?\n\nSetelah dihapus, 1 slot akan terbuka kembali untuk didaftarkan petugas baru (maks. 3 akun).`);
+  if (!konfirm) return;
+
+  list = list.filter(a => a.id !== id);
+  await FlokioDB.saveSetting('anak_kandang_list', list);
+
+  await renderManajemenAnakKandang();
+  renderLoginQuickAccess();
+  showToast(`Akun "${target.nama}" berhasil dihapus. 1 slot kembali tersedia.`);
+}
+
+// 3. RENDER QUICK ACCESS / AKUN TERDAFTAR DI HALAMAN LOGIN
+async function renderLoginQuickAccess() {
+  const container = document.getElementById('loginQuickAccessContainer');
+  if (!container) return;
+
+  const ownersList = (await FlokioDB.getSetting('owner_accounts_list')) || [];
+  const akList = (await FlokioDB.getSetting('anak_kandang_list')) || [];
+
+  const activeOwners = Array.isArray(ownersList) ? ownersList.filter(o => o.aktif !== false) : [];
+  const activeAK = Array.isArray(akList) ? akList.filter(a => a.aktif !== false) : [];
+
+  if (activeOwners.length === 0 && activeAK.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-2 p-3 bg-amber-50/90 border border-amber-200 rounded-2xl text-center space-y-1">
+        <span class="text-[11px] font-bold text-amber-900 block">⚠️ Belum Ada Akun Owner Resmi</span>
+        <span class="text-[10px] text-amber-700 block leading-tight">
+          Akun Owner hanya dapat dibuat & diotorisasi oleh Master Developer (Gua) melalui Dashboard Khusus.
+        </span>
+        <div class="pt-1">
+          <a href="master.html" class="inline-flex items-center gap-1 text-[11px] font-extrabold text-blue-700 hover:text-blue-900 underline">
+            <span>🛡️ Buka Dashboard Master Developer →</span>
+          </a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  // Akun Owner Sah yang telah dibuat oleh Gua
+  activeOwners.forEach(owner => {
+    html += `
+      <button type="button" onclick="selectLoginAccount('owner', '${owner.wa || owner.user}', '${owner.pin}')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all text-left">
+        <span class="text-xs font-bold text-slate-800 block">👨‍💼 ${owner.nama.split(' ')[0]} (Owner)</span>
+        <span class="text-[10px] text-slate-500 font-mono">Farm: ${owner.farm || 'Flok'}</span>
+      </button>
+    `;
+  });
+
+  // Akun Anak Kandang (Maks 3 akun terdaftar)
+  activeAK.forEach(ak => {
+    html += `
+      <button type="button" onclick="selectLoginAccount('kandang', '${ak.wa}', '${ak.pin}')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all text-left">
+        <span class="text-xs font-bold text-slate-800 block">👷 ${ak.nama.split(' ')[0]}</span>
+        <span class="text-[10px] text-slate-500 font-mono">Kandang ${ak.kandang_id || '01'}</span>
+      </button>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function selectLoginAccount(role, userOrWA, pin) {
+  switchLoginTab(role);
+  if (role === 'kandang') {
+    const inputWA = document.getElementById('loginOperatorWA');
+    const inputPIN = document.getElementById('loginPinKandang');
+    if (inputWA) inputWA.value = userOrWA;
+    if (inputPIN) inputPIN.value = pin;
+  } else {
+    const inputUser = document.getElementById('loginOwnerUser');
+    const inputPass = document.getElementById('loginOwnerPass');
+    if (inputUser) inputUser.value = userOrWA;
+    if (inputPass) inputPass.value = pin;
+  }
+}
+
 function handleLogout() {
   clearSession();
   navigateTo('login');
   showToast('Sesi Berakhir: Anda telah keluar ke Layar Login.');
 }
 
-function toggleActiveRole() {
-  const nextRole = currentRole === 'kandang' ? 'owner' : 'kandang';
-  setRole(nextRole);
-  showToast(`Beralih Mode ke: ${nextRole === 'owner' ? '👑 Owner' : '👷 Anak Kandang'}`);
+async function toggleActiveRole() {
+  if (currentRole === 'kandang') {
+    // Meminta PIN Owner untuk proteksi keamanan wewenang
+    const owner = await FlokioDB.getSetting('owner_account');
+    const inputPin = prompt('Masukkan PIN Master Owner untuk beralih mode (4-8 digit):');
+    if (!inputPin) return;
+    if (owner && inputPin === owner.pin) {
+      setRole('owner');
+      showToast(`Beralih Mode ke: 👑 Owner (${owner.nama})`);
+    } else {
+      alert('PIN Owner Salah! Akses ditolak.');
+    }
+  } else {
+    // Dari Owner beralih ke Anak Kandang
+    const akList = (await FlokioDB.getSetting('anak_kandang_list')) || [];
+    if (akList.length > 0) {
+      currentPenjaga = akList[0];
+    }
+    setRole('kandang');
+    showToast(`Beralih Mode ke: 👷 Anak Kandang (${currentPenjaga.nama})`);
+  }
 }
 
 // ================= ROLE & ACCESS CONTROL =================
@@ -826,22 +1455,33 @@ function updatePenjagaWAInfo(log) {
 }
 
 // Render Layar Akun
-function renderAkunView() {
+async function renderAkunView() {
   const avatar = document.getElementById('akunAvatar');
   const nama = document.getElementById('akunNamaUser');
   const desc = document.getElementById('akunRoleDesc');
   const targetLabel = document.getElementById('akunBtnSwitchTarget');
+  const cardManajemenAK = document.getElementById('cardManajemenAnakKandang');
+  const btnEditOwner = document.getElementById('btnAkunEditOwner');
 
   if (currentRole === 'owner') {
-    if (avatar) avatar.innerText = 'HR';
-    if (nama) nama.innerText = 'Pak Haji Rahmat (Owner)';
-    if (desc) desc.innerText = 'Akses Penuh: Manajemen Flok, Audit Panen & IP';
+    const owner = await FlokioDB.getSetting('owner_account');
+    const ownerName = owner ? owner.nama : 'Pak Haji Rahmat (Owner)';
+    const initials = ownerName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    if (avatar) avatar.innerText = initials || 'HR';
+    if (nama) nama.innerText = ownerName;
+    if (desc) desc.innerText = `Akses Penuh: Manajemen Flok, Audit Panen & Tim Kandang (WA: ${owner ? owner.wa : '-'})`;
     if (targetLabel) targetLabel.innerText = 'Anak Kandang';
+    if (cardManajemenAK) cardManajemenAK.classList.remove('hidden');
+    if (btnEditOwner) btnEditOwner.classList.remove('hidden');
+    await renderManajemenAnakKandang();
   } else {
     if (avatar) avatar.innerText = currentPenjaga.nama.substring(0, 2).toUpperCase();
     if (nama) nama.innerText = currentPenjaga.nama;
-    if (desc) desc.innerText = `Pekerja Lapangan Kandang 01 (WA: ${currentPenjaga.wa})`;
+    const kandangLabel = currentPenjaga.kandang_id === 'k02' ? 'Kandang 02' : 'Kandang 01';
+    if (desc) desc.innerText = `Pekerja Lapangan ${kandangLabel} (WA: ${currentPenjaga.wa})`;
     if (targetLabel) targetLabel.innerText = 'Owner';
+    if (cardManajemenAK) cardManajemenAK.classList.add('hidden'); // Sembunyikan total dari anak kandang
+    if (btnEditOwner) btnEditOwner.classList.add('hidden');
   }
 
   updateDeviceButtonsUI();

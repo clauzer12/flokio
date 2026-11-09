@@ -151,6 +151,11 @@
         <!-- FORM LOGIN ANAK KANDANG -->
         <div id="formLoginKandang" class="space-y-3.5">
           <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-3">
+            <div class="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-[10px] text-amber-800 leading-relaxed flex items-start gap-1.5">
+              <span>ℹ️</span>
+              <span><strong>Akses Terbatas:</strong> Akun anak kandang hanya dapat dibuat oleh <strong>Owner</strong> di menu Akun (maksimal 3 akun).</span>
+            </div>
+
             <div>
               <label class="block text-[11px] font-bold text-slate-700 mb-1">Pilih Kandang Penugasan</label>
               <select id="loginKandangSelect" class="w-full h-10 bg-white border border-slate-200 rounded-xl px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166] cursor-pointer">
@@ -160,25 +165,20 @@
             </div>
 
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1">Nama Operator / Penjaga</label>
-              <input type="text" id="loginOperatorNama" value="Budi Santoso" class="w-full h-10 bg-white border border-slate-200 rounded-xl px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1">No. WhatsApp Aktif Penjaga</label>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">No. WhatsApp Terdaftar</label>
               <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-xs text-slate-400">📱</span>
                 <input type="tel" id="loginOperatorWA" value="081234567890" placeholder="08xxxxxxxxxx" class="w-full h-10 bg-white border border-slate-200 rounded-xl pl-9 pr-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
               </div>
-              <p class="text-[10px] text-slate-400 mt-1">Nomor ini yang dihubungi Owner saat koordinasi.</p>
+              <p class="text-[10px] text-slate-400 mt-1">Masukkan No. WhatsApp yang telah didaftarkan Owner.</p>
             </div>
 
             <div>
               <div class="flex justify-between items-center mb-1">
-                <label class="block text-[11px] font-bold text-slate-700">PIN Masuk Cepat (4-Digit)</label>
-                <span class="text-[10px] text-slate-400 font-mono">Demo: 1234</span>
+                <label class="block text-[11px] font-bold text-slate-700">PIN Akses (4-Digit)</label>
+                <span class="text-[10px] text-slate-400 font-mono">Diberikan Owner</span>
               </div>
-              <input type="password" id="loginPinKandang" maxlength="4" placeholder="••••" value="1234" class="w-full h-11 bg-white border border-slate-200 rounded-xl text-center font-bold text-xl tracking-[0.6em] text-slate-900 focus:outline-none focus:border-[#3B5166] tabular-nums">
+              <input type="password" id="loginPinKandang" maxlength="4" placeholder="••••" value="" class="w-full h-11 bg-white border border-slate-200 rounded-xl text-center font-bold text-xl tracking-[0.6em] text-slate-900 focus:outline-none focus:border-[#3B5166] tabular-nums">
             </div>
           </div>
 
@@ -199,17 +199,22 @@
         <!-- FORM LOGIN OWNER -->
         <div id="formLoginOwner" class="hidden space-y-3.5">
           <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-3">
+            <div class="p-2.5 rounded-xl bg-sky-50 border border-sky-200/80 text-[10px] text-sky-900 leading-relaxed flex items-start gap-1.5">
+              <span>👑</span>
+              <span><strong>Akun Owner Flokio:</strong> Hanya dapat digunakan jika sudah dibuat oleh Master Developer (Gua) di Dashboard Khusus.</span>
+            </div>
+
             <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1">Email / No. WhatsApp Pemilik</label>
-              <input type="text" id="loginOwnerUser" value="haji.rahmat@flokio.id" class="w-full h-10 bg-white border border-slate-200 rounded-xl px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Nomor WhatsApp / User ID Owner</label>
+              <input type="text" id="loginOwnerUser" placeholder="Contoh: 081234567899" value="" class="w-full h-10 bg-white border border-slate-200 rounded-xl px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
             </div>
 
             <div>
               <div class="flex justify-between items-center mb-1">
-                <label class="block text-[11px] font-bold text-slate-700">PIN / Kata Sandi Master</label>
-                <span class="text-[10px] text-slate-400 font-mono">Demo: 8888</span>
+                <label class="block text-[11px] font-bold text-slate-700">PIN Akses Owner</label>
+                <span class="text-[10px] text-slate-400">PIN dari Master</span>
               </div>
-              <input type="password" id="loginOwnerPass" maxlength="8" placeholder="••••" value="8888" class="w-full h-11 bg-white border border-slate-200 rounded-xl text-center font-bold text-xl tracking-[0.5em] text-slate-900 focus:outline-none focus:border-[#3B5166] tabular-nums">
+              <input type="password" id="loginOwnerPass" maxlength="8" placeholder="••••" value="" class="w-full h-11 bg-white border border-slate-200 rounded-xl text-center font-bold text-xl tracking-[0.5em] text-slate-900 focus:outline-none focus:border-[#3B5166] tabular-nums">
             </div>
           </div>
 
@@ -218,7 +223,7 @@
               <input type="checkbox" checked class="w-4 h-4 rounded text-[#3B5166] border-slate-300">
               <span class="text-[11px]">Ingat sesi ini</span>
             </label>
-            <a href="javascript:void(0)" onclick="alert('Demo PIN Owner: 8888')" class="text-[11px] font-semibold text-[#3B5166] hover:underline">Lupa PIN?</a>
+            <span class="text-[10px] text-slate-400 font-medium">Hanya akun terdaftar di Dashboard Master</span>
           </div>
 
           <button type="button" onclick="submitLogin('owner')" class="w-full py-3 rounded-xl font-bold text-xs text-white shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 bg-gradient-navy">
@@ -227,19 +232,138 @@
           </button>
         </div>
 
-        <!-- AKSES CEPAT UJI COBA DEMO -->
+        <!-- AKSES CEPAT / STATUS AKUN TERDAFTAR -->
         <div class="pt-5 pb-2 text-center border-t border-slate-100 space-y-2 mt-4">
-          <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">⚡ Akses Cepat Uji Coba:</span>
-          <div class="grid grid-cols-2 gap-2 text-left">
-            <button type="button" onclick="quickLoginDemo('kandang')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all">
-              <span class="text-xs font-bold text-slate-800 block">👷 Budi</span>
-              <span class="text-[10px] text-slate-500">Penjaga (PIN: 1234)</span>
-            </button>
-            <button type="button" onclick="quickLoginDemo('owner')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all">
-              <span class="text-xs font-bold text-slate-800 block">👑 Pak Haji</span>
-              <span class="text-[10px] text-slate-500">Owner (PIN: 8888)</span>
+          <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">⚡ Akun Terdaftar Resmi:</span>
+          <div id="loginQuickAccessContainer" class="grid grid-cols-2 gap-2 text-left">
+            <!-- Di-generate dinamis oleh js/app.js -->
+          </div>
+
+          <!-- Pintu Masuk Dashboard Khusus Master Developer (Khusus Gua) -->
+          <div class="pt-3 border-t border-slate-100/80 flex flex-col items-center gap-1.5">
+            <a href="master.html" class="text-xs font-bold text-blue-700 hover:text-blue-900 inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-all">
+              <span>🛡️</span> <span>Buka Dashboard Khusus Master Developer (Gua)</span> <span>→</span>
+            </a>
+            <span class="text-[10px] text-slate-400">Tempat resmi pembuatan & otorisasi akun Owner</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================================= -->
+      <!-- SCREEN MASTER: DASHBOARD KHUSUS MASTER DEVELOPER (PEMBUATAN AKUN OWNER)   -->
+      <!-- ========================================================================= -->
+      <section id="screenMaster" class="screen-view p-4 space-y-4 flex-1 hidden fade-in max-w-4xl mx-auto w-full">
+        <!-- Header Dashboard Khusus -->
+        <div class="bg-gradient-to-r from-slate-900 via-[#1E293B] to-[#3B5166] text-white p-5 rounded-3xl shadow-lg flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-2xl border border-white/20">
+              🛡️
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold tracking-tight">Dashboard Khusus Master Developer</h3>
+                <span class="text-[9px] bg-amber-400 text-slate-950 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">Super Admin (Gua)</span>
+              </div>
+              <p class="text-xs text-slate-300">Pusat otoritas pembuatan akun Owner & kontrol lisensi sistem Flokio</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="keluarDariMasterDashboard()" class="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold border border-white/20 transition-all flex items-center gap-1.5">
+              <span>🚪</span> <span>Kembali ke Login</span>
             </button>
           </div>
+        </div>
+
+        <!-- Metrics Ringkas Super Admin -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs space-y-1">
+            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Total Akun Owner Sah</span>
+            <div class="text-2xl font-black text-slate-900" id="masterCountOwner">1</div>
+            <span class="text-[10px] text-emerald-600 font-semibold">Telah diotorisasi Gua</span>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs space-y-1">
+            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Total Anak Kandang</span>
+            <div class="text-2xl font-black text-slate-900" id="masterCountAK">1</div>
+            <span class="text-[10px] text-slate-500 font-medium">Maks. 3 per Owner</span>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs space-y-1 col-span-2 sm:col-span-1">
+            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Status Proteksi</span>
+            <div class="text-xs font-bold text-emerald-700 flex items-center gap-1.5 pt-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Terproteksi Kunci Master</span>
+            </div>
+            <span class="text-[10px] text-slate-400">Owner hanya bisa dibuat di sini</span>
+          </div>
+        </div>
+
+        <!-- Grid 2 Kolom: Form Buat Owner & Daftar Owner -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <!-- FORM BUAT AKUN OWNER BARU (KIRI) -->
+          <div class="md:col-span-5 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+            <div class="border-b border-slate-100 pb-2.5">
+              <div class="flex items-center gap-1.5">
+                <span class="text-sm">👑</span>
+                <h4 class="text-xs font-bold text-slate-900">Buat Akun Owner Baru</h4>
+              </div>
+              <p class="text-[10px] text-slate-500">Akun Owner hanya aktif jika Anda daftarkan di form ini</p>
+            </div>
+
+            <form onsubmit="event.preventDefault(); submitCreateOwnerMaster();" class="space-y-2.5 text-xs">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Nama Lengkap Owner</label>
+                <input type="text" id="inputMasterNamaOwner" placeholder="Contoh: Pak Haji Rahmat" required class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Email / No. WhatsApp (Untuk Login Owner)</label>
+                <input type="text" id="inputMasterUserOwner" placeholder="Email atau 08xxxxxxxxxx" required class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">PIN / Password Owner (4-8 Digit)</label>
+                <input type="password" id="inputMasterPinOwner" maxlength="8" placeholder="Contoh: 8888" required class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 font-bold text-slate-800 text-center tracking-[0.4em] focus:outline-none focus:border-[#3B5166]">
+                <p class="text-[10px] text-slate-400 mt-1">Berikan kredensial ini ke Owner yang bersangkutan.</p>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Nama Peternakan / Lokasi (Opsional)</label>
+                <input type="text" id="inputMasterFarmOwner" placeholder="Contoh: Kandang Berkah 01" class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 font-medium text-slate-800 focus:outline-none focus:border-[#3B5166]">
+              </div>
+
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-navy text-white font-bold text-xs shadow-xs hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-1.5">
+                <span>➕</span> <span>Daftarkan & Aktifkan Owner</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- DAFTAR AKUN OWNER TERDAFTAR (KANAN) -->
+          <div class="md:col-span-7 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div>
+                <h4 class="text-xs font-bold text-slate-900">Daftar Akun Owner yang Sah</h4>
+                <p class="text-[10px] text-slate-500">Hanya akun-akun di bawah ini yang dapat login ke Flokio</p>
+              </div>
+              <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full border border-slate-200" id="badgeMasterTotalOwner">
+                1 Terdaftar
+              </span>
+            </div>
+
+            <!-- List Owner -->
+            <div id="masterListOwner" class="space-y-2 text-xs">
+              <!-- Di-generate dinamis oleh js/app.js -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Setting Kunci Master Passcode -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2.5">
+            <span class="text-base">🔑</span>
+            <div>
+              <span class="font-bold text-slate-800 block">Kunci Master Akses Developer</span>
+              <p class="text-[10px] text-slate-500">Ganti kata sandi master agar hanya Anda yang bisa membuka dashboard ini</p>
+            </div>
+          </div>
+          <button type="button" onclick="promptGantiMasterPasscode()" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors">
+            ✏️ Ubah Kunci Master
+          </button>
         </div>
       </section>
 
@@ -698,12 +822,41 @@
               <p class="text-xs text-slate-500" id="akunRoleDesc">Pekerja Lapangan (WA: 081234567890)</p>
             </div>
           </div>
-          <!-- Tombol Switch Role Cepat di Menu Akun -->
-          <div class="text-right">
+          <!-- Tombol Switch Role Cepat & Edit Kredensial di Menu Akun -->
+          <div class="text-right flex flex-col items-end gap-1">
             <button onclick="toggleActiveRole()" class="text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-xl hover:bg-sky-100 transition-colors">
               Ganti ke <span id="akunBtnSwitchTarget">Owner</span>
             </button>
+            <button type="button" id="btnAkunMasterPortal" onclick="openMasterAuthModal()" class="text-[10px] text-slate-400 hover:text-slate-800 underline">
+              🛡️ Dashboard Master (Gua)
+            </button>
           </div>
+        </div>
+
+        <!-- CARD MANAJEMEN TIM ANAK KANDANG (EKSKLUSIF OWNER - MAKSIMAL 3 AKUN) -->
+        <div id="cardManajemenAnakKandang" class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-sm">👥</span>
+                <h4 class="text-xs font-bold text-slate-900">Manajemen Tim Anak Kandang</h4>
+              </div>
+              <p class="text-[10px] text-slate-500">Hanya Owner yang berhak membuat akun petugas kandang (Maks. 3 akun)</p>
+            </div>
+            <span id="badgeSlotAnakKandang" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+              1 / 3 Akun Terpakai
+            </span>
+          </div>
+
+          <!-- Daftar Akun Anak Kandang -->
+          <div id="listAnakKandang" class="space-y-2 text-xs">
+            <!-- Di-generate dinamis oleh js/app.js -->
+          </div>
+
+          <!-- Tombol Tambah Anak Kandang -->
+          <button type="button" id="btnBukaModalTambahAK" onclick="openModalTambahAnakKandang()" class="w-full py-2.5 rounded-xl border border-dashed border-sky-300 bg-sky-50/60 hover:bg-sky-100 text-sky-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors">
+            <span>➕</span> <span>Tambah Akun Anak Kandang Baru</span>
+          </button>
         </div>
 
         <!-- CARD PENGATURAN TAMPILAN PERANGKAT (KONSISTENSI FORMAT LAYAR) -->
@@ -1273,6 +1426,90 @@
           Simpan Master Gedung
         </button>
         <button onclick="closeModalTambahKandang()" class="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL MASTER DEVELOPER AUTH (KHUSUS GUA) ================= -->
+  <div id="modalMasterAuth" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden fade-in">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3.5 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center text-sm shadow-xs font-bold">🛡️</span>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Portal Master Developer</h3>
+            <p class="text-[10px] text-slate-500">Khusus Anda (Pemilik Aplikasi / Gua)</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeMasterAuthModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">×</button>
+      </div>
+
+      <div class="space-y-2.5 text-xs">
+        <p class="text-[11px] text-slate-600 leading-relaxed">
+          Masukkan <strong>Kunci Master Developer</strong> untuk membuka Dashboard Khusus Pembuatan Akun Owner:
+        </p>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Kunci Master Akses</label>
+          <input type="password" id="inputMasterAuthPass" placeholder="Masukkan kunci master..." class="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 font-mono font-bold text-center text-sm text-slate-900 focus:outline-none focus:border-[#3B5166]">
+          <p class="text-[10px] text-slate-400 mt-1">Kunci master awal: <code class="font-bold text-slate-700 bg-slate-100 px-1 py-0.5 rounded">masterflokio</code></p>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2 border-t border-slate-100">
+        <button type="button" onclick="submitMasterAuth()" class="flex-1 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+          Buka Dashboard Khusus →
+        </button>
+        <button type="button" onclick="closeMasterAuthModal()" class="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL TAMBAH ANAK KANDANG (MAKSIMAL 3 AKUN) ================= -->
+  <div id="modalTambahAnakKandang" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden fade-in">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3.5 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-xs">👷</span>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Tambah Akun Anak Kandang</h3>
+            <p class="text-[10px] text-slate-500" id="modalTambahAnakKandangSubtitle">Slot tersisa: 2 dari 3 akun</p>
+          </div>
+        </div>
+        <button onclick="closeModalTambahAnakKandang()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">×</button>
+      </div>
+
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Nama Lengkap Petugas</label>
+          <input type="text" id="inputTambahNamaAK" placeholder="Contoh: Asep Sunandar" class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">No. WhatsApp Aktif (Untuk Login)</label>
+          <input type="tel" id="inputTambahWAAK" placeholder="08xxxxxxxxxx" class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Penugasan Kandang</label>
+          <select id="inputTambahKandangAK" class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+            <option value="k01">🏢 Kandang 01 (Closed House)</option>
+            <option value="k02">🏢 Kandang 02 (Persiapan)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">PIN Akses Masuk (4-Digit)</label>
+          <input type="password" id="inputTambahPinAK" maxlength="4" placeholder="••••" class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 font-bold text-slate-800 text-center tracking-[0.6em] focus:outline-none focus:border-[#3B5166]">
+          <p class="text-[10px] text-slate-400 mt-1">Berikan PIN 4-digit ini kepada anak kandang yang bersangkutan.</p>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2 border-t border-slate-100">
+        <button type="button" onclick="submitTambahAnakKandang()" class="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+          Buat Akun Petugas
+        </button>
+        <button type="button" onclick="closeModalTambahAnakKandang()" class="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">
           Batal
         </button>
       </div>

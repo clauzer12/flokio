@@ -141,6 +141,32 @@ async function seedInitialData(db) {
     wa: '081234567890'
   });
 
+  // Kunci Akses Dashboard Khusus Master Developer (Hanya diketahui oleh "Gua")
+  await putRecord(db, 'settings', {
+    key: 'master_passcode',
+    _val: 'masterflokio'
+  });
+
+  // Daftar Akun Owner Sah (Hanya dapat dibuat di Dashboard Khusus oleh "Gua")
+  // Awalnya KOSONG. Akun Owner HANYA BISA DIGUNAKAN jika sudah dibuat oleh Master Developer di Dashboard Khusus.
+  await putRecord(db, 'settings', {
+    key: 'owner_accounts_list',
+    _val: []
+  });
+
+  // Pointer Akun Owner Aktif (Kosong saat awal sebelum login)
+  await putRecord(db, 'settings', {
+    key: 'owner_account',
+    _val: null
+  });
+
+  // Daftar Akun Anak Kandang (Dikelola Eksklusif oleh Owner - Maksimal 3 Akun)
+  // Awalnya KOSONG sampai Owner membuatnya di Menu Akun.
+  await putRecord(db, 'settings', {
+    key: 'anak_kandang_list',
+    _val: []
+  });
+
   // Status Sinkronisasi
   await putRecord(db, 'settings', {
     key: 'cloud_sync',
@@ -291,11 +317,17 @@ window.FlokioDB = {
   // Settings
   saveSetting: async (key, value) => {
     const db = await openDB();
-    return putRecord(db, 'settings', { key, ...value });
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      return putRecord(db, 'settings', { key, ...value, _val: value });
+    } else {
+      return putRecord(db, 'settings', { key, _val: value });
+    }
   },
   getSetting: async (key) => {
     const db = await openDB();
-    return getRecord(db, 'settings', key);
+    const record = await getRecord(db, 'settings', key);
+    if (!record) return null;
+    return record._val !== undefined ? record._val : record;
   },
 
   // Ekspor & Impor Seluruh Data (Data Portability Antar Perangkat)
