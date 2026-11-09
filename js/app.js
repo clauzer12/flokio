@@ -18,8 +18,8 @@ let panenMode = 'jarang';        // 'jarang' | 'total'
 let lastHarvestReportText = '';
 
 let currentPenjaga = {
-  nama: 'Budi Santoso',
-  wa: '081234567890'
+  nama: 'Petugas Kandang',
+  wa: ''
 };
 
 // ================= SESI PENGGUNA (PERSISTENCE ANTI-LOGOUT REFRESH) =================
@@ -198,20 +198,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Pastikan Akun Owner dan Tim Anak Kandang (Maks 3) siap
     await ensureAuthData();
 
-    // Muat data penjaga aktif
+    // Muat data penjaga aktif jika ada
     const akList = (await FlokioDB.getSetting('anak_kandang_list')) || [];
     const savedPenjaga = await FlokioDB.getSetting('current_penjaga');
-    if (savedPenjaga) {
-      currentPenjaga.nama = savedPenjaga.nama || (akList[0]?.nama || 'Budi Santoso');
-      currentPenjaga.wa = savedPenjaga.wa || (akList[0]?.wa || '081234567890');
-      currentPenjaga.kandang_id = savedPenjaga.kandang_id || (akList[0]?.kandang_id || 'k01');
+    if (savedPenjaga && savedPenjaga.nama && savedPenjaga.wa) {
+      currentPenjaga.nama = savedPenjaga.nama;
+      currentPenjaga.wa = savedPenjaga.wa;
+      currentPenjaga.kandang_id = savedPenjaga.kandang_id || 'k01';
     } else if (akList.length > 0) {
       currentPenjaga = akList[0];
+    } else {
+      currentPenjaga = { nama: 'Petugas Kandang', wa: '', kandang_id: 'k01' };
     }
     const inputWA = document.getElementById('loginOperatorWA');
-    if (inputWA) inputWA.value = currentPenjaga.wa;
+    if (inputWA && currentPenjaga.wa) inputWA.value = currentPenjaga.wa;
 
-    // Muat Flok Aktif
+    // Muat Flok Aktif (Bersih)
     await reloadAppData();
 
     // Inisialisasi dropdown umur (Hari 1 s.d. Hari 35)
@@ -253,40 +255,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Helper: Muat ulang flok dan catatan harian dari DB
 async function reloadAppData() {
+  // 1. Bersihkan flok dummy legacy jika ada
+  await FlokioDB.cleanLegacyDummyFlok();
+
   activeFlok = await FlokioDB.getActiveFlokByKandang(activeKandangId);
-  if (!activeFlok) {
-    activeFlok = {
-      id: 'flok_k01_4',
-      kandang_id: 'k01',
-      nomor_flok: 4,
-      tanggal_chickin: '2024-10-05',
-      strain: 'Cobb 500',
-      populasi_awal: 4500,
-      bobot_doc_gram: 42,
-      status_siklus: 'berjalan',
-      stok_pakan_awal_kg: 1500,
-      jenis_pakan_awal: 'BP-1 (Starter)',
-      standar_mingguan: {
+
+  // Jika flok yang ditemukan adalah data dummy Cobb 500 / flok_k01_4, bersihkan total!
+  if (activeFlok && (activeFlok.id === 'flok_k01_4' || activeFlok.tanggal_chickin === '2024-10-05')) {
+    await FlokioDB.resetAllFlokAndLogs();
+    activeFlok = null;
+  }
+
+  if (activeFlok) {
+    if (!activeFlok.standar_mingguan) {
+      activeFlok.standar_mingguan = {
         m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
         m2: { umur: 14, std_bw_gram: 475, std_fcr: 1.18 },
         m3: { umur: 21, std_bw_gram: 1020, std_fcr: 1.38 },
         m4: { umur: 28, std_bw_gram: 1650, std_fcr: 1.52 }
-      },
-      panen_jarang: [],
-      panen_total: null
-    };
-    await FlokioDB.saveFlok(activeFlok);
-  } else if (!activeFlok.standar_mingguan) {
-    activeFlok.standar_mingguan = {
-      m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
-      m2: { umur: 14, std_bw_gram: 475, std_fcr: 1.18 },
-      m3: { umur: 21, std_bw_gram: 1020, std_fcr: 1.38 },
-      m4: { umur: 28, std_bw_gram: 1650, std_fcr: 1.52 }
-    };
-    await FlokioDB.saveFlok(activeFlok);
+      };
+      await FlokioDB.saveFlok(activeFlok);
+    }
+    dailyLogs = await FlokioDB.getDailyLogsByFlok(activeFlok.id);
+  } else {
+    // 100% Bersih: Belum ada flok yang berjalan sampai Owner melakukan Chick-in
+    activeFlok = null;
+    dailyLogs = [];
   }
-
-  dailyLogs = await FlokioDB.getDailyLogsByFlok(activeFlok.id);
 }
 
 // Inisialisasi Opsi Umur 1 s.d. 35
@@ -1134,7 +1129,7 @@ function setRole(role) {
   const sidebarUserLabel = document.getElementById('sidebarUserLabel');
   const sidebarSubLabel = document.getElementById('sidebarSubLabel');
 
-  const isFlokEmpty = activeFlok && activeFlok.status_siklus === 'panen';
+  const isFlokEmpty = !activeFlok || activeFlok.status_siklus === 'panen';
 
   if (role === 'owner') {
     if (btnOwner) btnOwner.className = 'px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs transition-all';
@@ -1236,17 +1231,17 @@ function setRole(role) {
 function computeFlokMetrics(flok, logs) {
   if (!flok) {
     return {
-      populasiAwal: 5000,
-      sisaAyam: 5000,
+      populasiAwal: 0,
+      sisaAyam: 0,
       totalMati: 0,
       deplesiPersen: '0.00',
       totalPakanPakai: 0,
-      totalPakanMasuk: 2000,
-      sisaStokPakan: 2000,
-      latestBW: 42,
+      totalPakanMasuk: 0,
+      sisaStokPakan: 0,
+      latestBW: 0,
       maxLoggedUmur: 1,
-      fcr: '1.05',
-      estIP: 350,
+      fcr: '-',
+      estIP: 0,
       totalPanenJarangEkor: 0,
       totalPanenJarangKg: 0,
       dayRecords: []
@@ -1350,7 +1345,54 @@ function computeFlokMetrics(flok, logs) {
 
 // ================= RENDER ALL VIEWS SECARA DINAMIS =================
 function renderAllViews() {
-  if (!activeFlok) return;
+  const cardOwner = document.getElementById('cardFlokOwnerActive');
+  const cardKandang = document.getElementById('cardFlokKandangActive');
+  const cardEmpty = document.getElementById('cardFlokEmptyState');
+  const ownerAudit = document.getElementById('sectionOwnerAudit');
+  const formInput = document.getElementById('sectionFormInput');
+  const cardSaved = document.getElementById('cardCatatanSaved');
+
+  if (!activeFlok || activeFlok.status_siklus === 'panen') {
+    if (cardEmpty) cardEmpty.classList.remove('hidden');
+    if (cardOwner) cardOwner.classList.add('hidden');
+    if (cardKandang) cardKandang.classList.add('hidden');
+    if (ownerAudit) ownerAudit.classList.add('hidden');
+    if (formInput) formInput.classList.add('hidden');
+    if (cardSaved) cardSaved.classList.add('hidden');
+
+    const kPop = document.getElementById('kandang01PopulasiTag');
+    if (kPop) kPop.innerText = '0 ekor';
+    const kFCR = document.getElementById('kandang01FCRTag');
+    if (kFCR) kFCR.innerText = '-';
+    const kUmur = document.getElementById('kandang01UmurTag');
+    if (kUmur) kUmur.innerText = 'Hari ke-0';
+    const kPenjaga = document.getElementById('kandang01PenjagaTag');
+    if (kPenjaga) kPenjaga.innerText = currentPenjaga.nama ? currentPenjaga.nama.split(' ')[0] : '-';
+    const kStatusTag = document.getElementById('kandang01StatusTag');
+    if (kStatusTag) {
+      kStatusTag.className = 'text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full';
+      kStatusTag.innerText = 'Kosong (Belum Chick-in)';
+    }
+
+    const rFlokInfo = document.getElementById('rekapFlokInfo');
+    if (rFlokInfo) rFlokInfo.innerText = 'Kandang Bersih (Belum Ada Flok Aktif)';
+    renderRekapTable();
+    return;
+  }
+
+  // Jika ada activeFlok
+  if (cardEmpty) cardEmpty.classList.add('hidden');
+  if (currentRole === 'owner') {
+    if (cardOwner) cardOwner.classList.remove('hidden');
+    if (cardKandang) cardKandang.classList.add('hidden');
+    if (ownerAudit) ownerAudit.classList.remove('hidden');
+    if (formInput) formInput.classList.add('hidden');
+  } else {
+    if (cardOwner) cardOwner.classList.add('hidden');
+    if (cardKandang) cardKandang.classList.remove('hidden');
+    if (ownerAudit) ownerAudit.classList.add('hidden');
+    if (formInput) formInput.classList.remove('hidden');
+  }
 
   const metrics = computeFlokMetrics(activeFlok, dailyLogs);
   const umurTerkini = metrics.maxLoggedUmur;
@@ -1555,7 +1597,7 @@ function selectUmur(umur) {
   const sel = document.getElementById('selectUmurInput');
   if (sel) sel.value = umur;
 
-  const dateStr = addDaysToDateStr(activeFlok ? activeFlok.tanggal_chickin : '2024-10-05', umur - 1);
+  const dateStr = addDaysToDateStr(activeFlok ? activeFlok.tanggal_chickin : new Date().toISOString().split('T')[0], umur - 1);
   const inputTgl = document.getElementById('inputTanggalRecord');
   if (inputTgl) inputTgl.value = dateStr;
 
@@ -1741,7 +1783,47 @@ function switchWeek(m) {
 function renderRekapTable() {
   const tbody = document.getElementById('rekapTableBody');
   const tfoot = document.getElementById('rekapTableFoot');
-  if (!tbody || !activeFlok) return;
+  const matrixContainer = document.getElementById('rekap4WeekMatrix');
+  const rFlokInfo = document.getElementById('rekapFlokInfo');
+  const rekapStdTitle = document.getElementById('rekapStdTitle');
+  const rekapStdTargetText = document.getElementById('rekapStdTargetText');
+  const rekapStdActualBadge = document.getElementById('rekapStdActualBadge');
+
+  if (!tbody) return;
+
+  if (!activeFlok) {
+    if (rFlokInfo) rFlokInfo.innerText = 'Kandang Bersih (Belum Ada Flok Aktif)';
+    if (matrixContainer) {
+      matrixContainer.innerHTML = `
+        <div class="col-span-2 sm:col-span-4 p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 text-center space-y-1">
+          <p class="text-xs font-bold text-slate-700">Belum Ada Target Standar</p>
+          <p class="text-[11px] text-slate-400">Target standar mingguan (Std BW & Std FCR) akan otomatis muncul di sini setelah Anda melakukan Chick-in DOC.</p>
+        </div>
+      `;
+    }
+    if (rekapStdTitle) rekapStdTitle.innerText = 'Kandang Bersih (Belum Ada Flok)';
+    if (rekapStdTargetText) rekapStdTargetText.innerText = 'Lakukan Chick-in flok baru untuk mengatur target 4 minggu.';
+    if (rekapStdActualBadge) rekapStdActualBadge.classList.add('hidden');
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" class="py-10 text-center text-slate-500">
+          <div class="max-w-xs mx-auto space-y-2.5">
+            <div class="text-3xl">🐣</div>
+            <div class="font-bold text-slate-700 text-xs sm:text-sm">Belum Ada Flok Berjalan</div>
+            <p class="text-[11px] text-slate-400">Data rekapitulasi 10 kolom masih kosong. Silakan mulai siklus pemeliharaan baru dari Hari ke-1 DOC.</p>
+            <button onclick="openModalChickin()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+              <span>🐣</span> Mulai Chick-in Flok Baru
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+    if (tfoot) tfoot.innerHTML = '';
+    return;
+  }
+
+  if (rekapStdActualBadge) rekapStdActualBadge.classList.remove('hidden');
 
   const metrics = computeFlokMetrics(activeFlok, dailyLogs);
   const dayRecords = metrics.dayRecords;
@@ -1750,7 +1832,6 @@ function renderRekapTable() {
   const endDay = currentWeekTab * 7;
 
   // 1. Render Matriks 4 Minggu Standar vs Realisasi di Bagian Atas Rekap
-  const matrixContainer = document.getElementById('rekap4WeekMatrix');
   if (matrixContainer && activeFlok) {
     const stdData = activeFlok.standar_mingguan || {
       m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
@@ -2146,8 +2227,20 @@ async function saveEditedStandar() {
 }
 
 // ================= MODAL CHICK-IN FLOK BARU =================
-function openModalChickin() {
-  const nextNum = (activeFlok ? activeFlok.nomor_flok : 4) + 1;
+async function openModalChickin() {
+  let nextNum = 1;
+  try {
+    const allFloks = (await FlokioDB.getAllFloks()) || [];
+    const validFloks = allFloks.filter(f => f && f.nomor_flok && f.id !== 'flok_k01_4');
+    if (validFloks.length > 0) {
+      nextNum = Math.max(...validFloks.map(f => Number(f.nomor_flok) || 0)) + 1;
+    } else if (activeFlok && activeFlok.nomor_flok) {
+      nextNum = Number(activeFlok.nomor_flok) + 1;
+    }
+  } catch (e) {
+    nextNum = 1;
+  }
+
   const inputNum = document.getElementById('inputFlokNumber');
   if (inputNum) inputNum.value = nextNum;
 
@@ -2164,7 +2257,7 @@ function closeModalChickin() {
 }
 
 async function submitChickin() {
-  const flokNum = parseInt(document.getElementById('inputFlokNumber').value) || 5;
+  const flokNum = parseInt(document.getElementById('inputFlokNumber').value) || 1;
   const tglDoc = document.getElementById('inputChickinDate').value || new Date().toISOString().split('T')[0];
   const popAwal = parseInt(document.getElementById('inputChickinPopulasi').value) || 5000;
   const bwDoc = parseFloat(document.getElementById('inputChickinBobotDOC').value) || 42;
@@ -2227,6 +2320,33 @@ async function submitChickin() {
   selectUmur(1);
   renderAllViews();
   showToast(`Siklus Flok #${flokNum} Berhasil Dimulai dari Hari ke-1 (DOC)!`);
+}
+
+// ================= RESET DATA SIKLUS FLOK (BERSIH DARI AWAL) =================
+async function resetSiklusFlokKeAwal() {
+  const confirmed = confirm(
+    '⚠️ PERINGATAN RESET SIKLUS FLOK!\n\n' +
+    'Anda akan menghapus seluruh data siklus flok dan catatan harian di kandang ini.\n' +
+    'Database akan dikembalikan ke kondisi BERSIH (0 flok, 0 catatan) sehingga Anda bisa Chick-in dari Flok #1.\n\n' +
+    'Catatan: Akun Owner dan Akun Anak Kandang TIDAK AKAN terhapus.\n\n' +
+    'Lanjutkan reset data siklus flok?'
+  );
+  if (!confirmed) return;
+
+  try {
+    await FlokioDB.resetAllFlokAndLogs();
+    activeFlok = null;
+    dailyLogs = [];
+    currentInputUmur = 1;
+    currentWeekTab = 1;
+    renderAllViews();
+    setRole(currentRole);
+    selectUmur(1);
+    showToast('🧹 Semua data siklus flok berhasil dibersihkan! Silakan mulai Chick-in Flok #1.');
+  } catch (err) {
+    console.error('Gagal reset flok:', err);
+    showToast('❌ Gagal mereset data flok.');
+  }
 }
 
 // ================= MODAL PANEN & INDEKS PERFORMA (IP) =================
@@ -2594,11 +2714,12 @@ function applyCloudRoomCode() {
 // ================= UTILITY HELPERS =================
 function addDaysToDateStr(baseDateStr, daysToAdd) {
   try {
-    const d = new Date(baseDateStr || '2024-10-05');
+    const today = new Date().toISOString().split('T')[0];
+    const d = new Date(baseDateStr || today);
     d.setDate(d.getDate() + Number(daysToAdd));
     return d.toISOString().split('T')[0];
   } catch (_) {
-    return '2024-10-05';
+    return new Date().toISOString().split('T')[0];
   }
 }
 

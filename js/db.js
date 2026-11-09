@@ -60,17 +60,17 @@ async function seedInitialData(db) {
   const count = await countRecords(db, 'kandang');
   if (count > 0) return; // Sudah terisi data sebelumnya
 
-  console.log('[IndexedDB] Mengisi data awal (Seeding Master Kandang 01 & Flok #4 lengkap)...');
+  console.log('[IndexedDB] Menyiapkan struktur kandang bersih (Tanpa data dummy)...');
 
-  // Master Kandang
+  // Master Kandang Bersih (Status kosong, siap untuk Chick-in baru)
   await putRecord(db, 'kandang', {
     id: 'k01',
     nama: 'Kandang 01',
     tipe: 'Closed House',
     kapasitas: 5000,
-    status: 'aktif',
-    operator_default: 'Budi Santoso',
-    operator_wa: '081234567890'
+    status: 'kosong',
+    operator_default: '-',
+    operator_wa: ''
   });
 
   await putRecord(db, 'kandang', {
@@ -81,64 +81,6 @@ async function seedInitialData(db) {
     status: 'kosong',
     operator_default: '-',
     operator_wa: ''
-  });
-
-  // Flok #4 Aktif di Kandang 01
-  await putRecord(db, 'flok', {
-    id: 'flok_k01_4',
-    kandang_id: 'k01',
-    nomor_flok: 4,
-    tanggal_chickin: '2024-10-05',
-    strain: 'Cobb 500',
-    populasi_awal: 4500,
-    bobot_doc_gram: 42,
-    status_siklus: 'berjalan', // 'berjalan' | 'panen'
-    stok_pakan_awal_kg: 1500,
-    jenis_pakan_awal: 'BP-1 (Starter)',
-    standar_mingguan: {
-      m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
-      m2: { umur: 14, std_bw_gram: 475, std_fcr: 1.18 },
-      m3: { umur: 21, std_bw_gram: 1020, std_fcr: 1.38 },
-      m4: { umur: 28, std_bw_gram: 1650, std_fcr: 1.52 }
-    },
-    panen_jarang: [],
-    panen_total: null
-  });
-
-  // Seed Data Riil Hari 1 s.d. Hari 16 (M1 & M2 Lengkap)
-  const sampleData = [
-    // M1: Hari 1 - 7 (Starter / Brooding)
-    { id: 'log_f4_h01', flok_id: 'flok_k01_4', umur_hari: 1, tanggal: '2024-10-05', pakan_jenis: 'BP-1 (Starter)', pakan_pakai_kg: 35, pakan_masuk_kg: 1500, bw_sampling_gram: 42, kematian_ekor: 8, afkir_ekor: 0, catatan: 'DOC masuk 4.500 ekor, kondisi lincah, pemanas brooding 33°C' },
-    { id: 'log_f4_h02', flok_id: 'flok_k01_4', umur_hari: 2, tanggal: '2024-10-06', pakan_jenis: 'BP-1 (Starter)', pakan_pakai_kg: 50, pakan_masuk_kg: 0, bw_sampling_gram: null, kematian_ekor: 6, afkir_ekor: 0, catatan: 'Suhu stabil 32°C, sekam kering, ayam aktif minum' },
-    { id: 'log_f4_h03', flok_id: 'flok_k01_4', umur_hari: 3, tanggal: '2024-10-07', pakan_jenis: 'BP-1 (Starter)', pakan_pakai_kg: 70, pakan_masuk_kg: 0, bw_sampling_gram: null, kematian_ekor: 5, afkir_ekor: 0, catatan: 'Pemberian vitamin brooding dan elektrolit' },
-    { id: 'log_f4_h04', flok_id: 'flok_k01_4', umur_hari: 4, tanggal: '2024-10-08', pakan_jenis: 'BP-1 (Starter)', pakan_pakai_kg: 90, pakan_masuk_kg: 0, bw_sampling_gram: null, kematian_ekor: 4, afkir_ekor: 0, catatan: 'Ventilasi tirai dibuka sedikit sirkulasi pagi' },
-    { id: 'log_f4_h05', flok_id: 'flok_k01_4', umur_hari: 5, tanggal: '2024-10-09', pakan_jenis: 'BP-1 (Starter)', pakan_pakai_kg: 110, pakan_masuk_kg: 0, bw_sampling_gram: null, kematian_ekor: 4, afkir_ekor: 0, catatan: 'Pelebaran sekat chick guard tahap 1' },
-    { id: 'log_f4_h06', flok_id: 'flok_k01_4', umur_hari: 6, tanggal: '2024-10-10', pakan_jenis: 'BP-1 (Starter)', pakan_pakai_kg: 130, pakan_masuk_kg: 0, bw_sampling_gram: null, kematian_ekor: 3, afkir_ekor: 0, catatan: 'Kondisi feses normal, nafsu makan baik' },
-    { id: 'log_f4_h07', flok_id: 'flok_k01_4', umur_hari: 7, tanggal: '2024-10-11', pakan_jenis: 'BP-1 (Starter)', pakan_pakai_kg: 150, pakan_masuk_kg: 0, bw_sampling_gram: 182, kematian_ekor: 3, afkir_ekor: 0, catatan: 'Sampling akhir M1 rata-rata 182g (Target tercapai)' },
-
-    // M2: Hari 8 - 14 (Grower)
-    { id: 'log_f4_h08', flok_id: 'flok_k01_4', umur_hari: 8, tanggal: '2024-10-12', pakan_jenis: 'B11A (Grower)', pakan_pakai_kg: 150, pakan_masuk_kg: 150, bw_sampling_gram: 215, kematian_ekor: 15, afkir_ekor: 0, catatan: 'Peralihan pakan ke grower B11A, suhu 29°C' },
-    { id: 'log_f4_h09', flok_id: 'flok_k01_4', umur_hari: 9, tanggal: '2024-10-13', pakan_jenis: 'B11A (Grower)', pakan_pakai_kg: 200, pakan_masuk_kg: 1500, bw_sampling_gram: null, kematian_ekor: 15, afkir_ekor: 0, catatan: 'Pakan masuk 30 sak (1.500 kg) B11A' },
-    { id: 'log_f4_h10', flok_id: 'flok_k01_4', umur_hari: 10, tanggal: '2024-10-14', pakan_jenis: 'B11A (Grower)', pakan_pakai_kg: 200, pakan_masuk_kg: 0, bw_sampling_gram: null, kematian_ekor: 9, afkir_ekor: 0, catatan: 'Sekam kering, kipas exhaust 1 aktif periodik' },
-    { id: 'log_f4_h11', flok_id: 'flok_k01_4', umur_hari: 11, tanggal: '2024-10-15', pakan_jenis: 'B11A (Grower)', pakan_pakai_kg: 250, pakan_masuk_kg: 0, bw_sampling_gram: null, kematian_ekor: 7, afkir_ekor: 0, catatan: 'Kondisi ayam lincah, air minum lancar' },
-    { id: 'log_f4_h12', flok_id: 'flok_k01_4', umur_hari: 12, tanggal: '2024-10-16', pakan_jenis: 'B11A (Grower)', pakan_pakai_kg: 250, pakan_masuk_kg: 0, bw_sampling_gram: null, kematian_ekor: 9, afkir_ekor: 0, catatan: 'Pemberian vitamin anti-stres' },
-    { id: 'log_f4_h13', flok_id: 'flok_k01_4', umur_hari: 13, tanggal: '2024-10-17', pakan_jenis: 'B11A (Grower)', pakan_pakai_kg: 300, pakan_masuk_kg: 0, bw_sampling_gram: null, kematian_ekor: 12, afkir_ekor: 0, catatan: 'Exhaust fan 3 aktif suhu siang 30°C' },
-    { id: 'log_f4_h14', flok_id: 'flok_k01_4', umur_hari: 14, tanggal: '2024-10-18', pakan_jenis: 'B11A (Grower)', pakan_pakai_kg: 250, pakan_masuk_kg: 0, bw_sampling_gram: 469, kematian_ekor: 9, afkir_ekor: 0, catatan: 'Timbang sampling 50 ekor: avg 469g' },
-
-    // M3: Hari 15 & 16
-    { id: 'log_f4_h15', flok_id: 'flok_k01_4', umur_hari: 15, tanggal: '2024-10-19', pakan_jenis: 'B11A (Grower)', pakan_pakai_kg: 320, pakan_masuk_kg: 1000, bw_sampling_gram: null, kematian_ekor: 6, afkir_ekor: 0, catatan: 'Ayam aktif makan, pakan masuk 20 sak' },
-    { id: 'log_f4_h16', flok_id: 'flok_k01_4', umur_hari: 16, tanggal: '2024-10-20', pakan_jenis: 'B11A (Grower)', pakan_pakai_kg: 350, pakan_masuk_kg: 0, bw_sampling_gram: 620, kematian_ekor: 6, afkir_ekor: 0, catatan: 'Kondisi sekam kering, ayam lincah, suhu exhaust fan stabil 28°C' }
-  ];
-
-  for (const log of sampleData) {
-    await putRecord(db, 'catatan_harian', log);
-  }
-
-  // Pengaturan Penjaga Aktif
-  await putRecord(db, 'settings', {
-    key: 'current_penjaga',
-    nama: 'Budi Santoso',
-    wa: '081234567890'
   });
 
   // Kunci Akses Dashboard Khusus Master Developer (Hanya diketahui oleh "Gua")
@@ -328,6 +270,39 @@ window.FlokioDB = {
     const record = await getRecord(db, 'settings', key);
     if (!record) return null;
     return record._val !== undefined ? record._val : record;
+  },
+
+  // Reset & Pembersihan Data Dummy
+  resetAllFlokAndLogs: async () => {
+    const db = await openDB();
+    await clearStore(db, 'flok');
+    await clearStore(db, 'catatan_harian');
+    const k1 = await getRecord(db, 'kandang', 'k01');
+    if (k1) { k1.status = 'kosong'; await putRecord(db, 'kandang', k1); }
+    const k2 = await getRecord(db, 'kandang', 'k02');
+    if (k2) { k2.status = 'kosong'; await putRecord(db, 'kandang', k2); }
+    return true;
+  },
+
+  cleanLegacyDummyFlok: async () => {
+    try {
+      const db = await openDB();
+      const floks = await getAllRecords(db, 'flok');
+      const hasDummy = floks.some(f => f.id === 'flok_k01_4');
+      if (hasDummy) {
+        console.log('[FlokioDB] Membersihkan data dummy bawaan (flok_k01_4)...');
+        await clearStore(db, 'flok');
+        await clearStore(db, 'catatan_harian');
+        const k1 = await getRecord(db, 'kandang', 'k01');
+        if (k1) { k1.status = 'kosong'; await putRecord(db, 'kandang', k1); }
+      }
+      const penjaga = await getRecord(db, 'settings', 'current_penjaga');
+      if (penjaga && (penjaga.nama === 'Budi Santoso' || (penjaga._val && penjaga._val.nama === 'Budi Santoso'))) {
+        await deleteRecord(db, 'settings', 'current_penjaga');
+      }
+    } catch (e) {
+      console.warn('Gagal bersihkan data dummy legacy:', e);
+    }
   },
 
   // Ekspor & Impor Seluruh Data (Data Portability Antar Perangkat)

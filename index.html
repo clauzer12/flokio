@@ -83,8 +83,8 @@
 
       <div class="pt-4 border-t border-slate-200 text-xs flex items-center justify-between">
         <div>
-          <p class="font-bold text-slate-800" id="sidebarUserLabel">Budi Santoso</p>
-          <p class="text-[10px] text-slate-400" id="sidebarSubLabel">Operator Kandang 01</p>
+          <p class="font-bold text-slate-800" id="sidebarUserLabel">-</p>
+          <p class="text-[10px] text-slate-400" id="sidebarSubLabel">-</p>
         </div>
         <button onclick="handleLogout()" class="text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg font-semibold transition-colors" title="Keluar ke Layar Login">
           Keluar
@@ -389,68 +389,68 @@
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="font-extrabold text-base tracking-tight" id="ownerCardKandangName">Kandang 01</h3>
-                <span class="text-[10px] bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full backdrop-blur-xs" id="ownerCardFlokBadge">Flok #4</span>
+                <span class="text-[10px] bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full backdrop-blur-xs" id="ownerCardFlokBadge">Flok #-</span>
               </div>
-              <p class="text-xs text-slate-200 mt-0.5">Closed House • DOC <span id="ownerCardDocDate">5 Okt 2024</span> (<span id="ownerCardPopAwal">4.500</span> ekor)</p>
+              <p class="text-xs text-slate-200 mt-0.5">Closed House • DOC <span id="ownerCardDocDate">-</span> (<span id="ownerCardPopAwal">0</span> ekor)</p>
             </div>
-            <span class="text-xs font-bold bg-white text-[#3B5166] px-2.5 py-1 rounded-xl shadow-xs" id="ownerCardUmurBadge">Hari ke-16</span>
+            <span class="text-xs font-bold bg-white text-[#3B5166] px-2.5 py-1 rounded-xl shadow-xs" id="ownerCardUmurBadge">Hari ke-0</span>
           </div>
           <div class="grid grid-cols-4 gap-2 text-center text-xs">
             <div class="bg-white/10 rounded-xl p-2 backdrop-blur-xs">
               <span class="text-[10px] text-slate-200 block">Deplesi</span>
-              <span class="font-extrabold text-sm text-white" id="ownerCardDeplesi">4.3%</span>
+              <span class="font-extrabold text-sm text-white" id="ownerCardDeplesi">0.0%</span>
             </div>
             <div class="bg-white/10 rounded-xl p-2 backdrop-blur-xs">
               <span class="text-[10px] text-slate-200 block">Sisa Ayam</span>
-              <span class="font-extrabold text-sm text-white" id="ownerCardSisaAyam">4.205</span>
+              <span class="font-extrabold text-sm text-white" id="ownerCardSisaAyam">0</span>
             </div>
             <div class="bg-white/10 rounded-xl p-2 backdrop-blur-xs">
               <span class="text-[10px] text-slate-200 block">FCR</span>
-              <span class="font-extrabold text-sm text-emerald-300" id="ownerCardFCR">1.08</span>
+              <span class="font-extrabold text-sm text-emerald-300" id="ownerCardFCR">-</span>
             </div>
             <div class="bg-white/10 rounded-xl p-2 backdrop-blur-xs">
               <span class="text-[10px] text-slate-200 block">Est. IP</span>
-              <span class="font-extrabold text-sm text-sky-200" id="ownerCardIP">388</span>
+              <span class="font-extrabold text-sm text-sky-200" id="ownerCardIP">-</span>
             </div>
           </div>
         </div>
 
         <!-- KARTU FLOK AKTIF (MODE ANAK KANDANG - DINAMIS) -->
-        <div id="cardFlokKandangActive" class="rounded-2xl p-4 text-white shadow-md relative overflow-hidden bg-gradient-navy">
+        <div id="cardFlokKandangActive" class="hidden rounded-2xl p-4 text-white shadow-md relative overflow-hidden bg-gradient-navy">
           <div class="flex justify-between items-start mb-3">
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="font-extrabold text-base tracking-tight" id="workerCardKandangName">Kandang 01</h3>
-                <span class="text-[10px] bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full" id="workerCardFlokBadge">Flok #4</span>
+                <span class="text-[10px] bg-white/20 text-white font-semibold px-2 py-0.5 rounded-full" id="workerCardFlokBadge">Flok #1</span>
               </div>
-              <p class="text-xs text-slate-200 mt-0.5">Penjaga Bertugas: <strong class="text-white" id="lblWorkerShift">Budi Santoso</strong></p>
+              <p class="text-xs text-slate-200 mt-0.5">Penjaga Bertugas: <strong class="text-white" id="lblWorkerShift">-</strong></p>
             </div>
-            <span class="text-xs font-bold bg-white text-[#3B5166] px-2.5 py-1 rounded-xl shadow-xs" id="workerCardUmurBadge">Hari ke-16</span>
+            <span class="text-xs font-bold bg-white text-[#3B5166] px-2.5 py-1 rounded-xl shadow-xs" id="workerCardUmurBadge">Hari ke-1</span>
           </div>
           <div class="grid grid-cols-2 gap-2 text-center text-xs">
             <div class="bg-white/10 rounded-xl p-2.5 backdrop-blur-xs">
               <span class="text-[10px] text-slate-200 block">Kematian Hari Ini</span>
-              <span class="font-extrabold text-base text-white" id="badgeMatiHariIni">6 Ekor</span>
+              <span class="font-extrabold text-base text-white" id="badgeMatiHariIni">0 Ekor</span>
             </div>
             <div class="bg-white/10 rounded-xl p-2.5 backdrop-blur-xs">
               <span class="text-[10px] text-slate-200 block">Pakan Digunakan</span>
-              <span class="font-extrabold text-base text-amber-200" id="badgePakanHariIni">350 Kg</span>
+              <span class="font-extrabold text-base text-amber-200" id="badgePakanHariIni">0 Kg</span>
             </div>
           </div>
           <div class="flex justify-between items-center text-[11px] text-slate-200 pt-2 border-t border-white/10 mt-2">
-            <span>Sisa Ayam: <strong class="text-white" id="workerCardSisaAyam">4.205 Ekor</strong></span>
-            <span>Stok Gudang: <strong class="text-amber-200" id="workerCardSisaPakan">1.245 Kg</strong></span>
+            <span>Sisa Ayam: <strong class="text-white" id="workerCardSisaAyam">0 Ekor</strong></span>
+            <span>Stok Gudang: <strong class="text-amber-200" id="workerCardSisaPakan">0 Kg</strong></span>
           </div>
         </div>
 
-        <!-- KARTU EMPTY STATE (KANDANG DALAM MASA SANITASI / KOSONG) -->
-        <div id="cardFlokEmptyState" class="hidden bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-6 text-center space-y-3">
+        <!-- KARTU EMPTY STATE (KANDANG DALAM MASA SANITASI / KOSONG BERSIH) -->
+        <div id="cardFlokEmptyState" class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-6 text-center space-y-3">
           <div class="w-12 h-12 mx-auto bg-amber-100 text-amber-800 rounded-2xl flex items-center justify-center text-2xl font-bold">
             🐣
           </div>
           <div>
-            <h4 class="text-sm font-bold text-slate-800">Kandang 01 Sedang Kosong (Masa Sanitasi)</h4>
-            <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">Siklus sebelumnya telah tuntas dipanen. Lakukan pembersihan, pengapuran, dan disinfeksi kandang sebelum memulai flok baru.</p>
+            <h4 class="text-sm font-bold text-slate-800">Kandang 01 Bersih (Belum Ada Flok Aktif)</h4>
+            <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">Data kandang masih bersih dan belum ada siklus pemeliharaan berjalan. Silakan mulai siklus baru dari awal (Hari ke-1 DOC).</p>
           </div>
           <button onclick="openModalChickin()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all">
             <span>🐣</span> Mulai Chick-in Flok Baru
@@ -543,7 +543,7 @@
             </div>
             <div class="flex items-center gap-2">
               <button type="button" onclick="adjustMati(-1)" class="w-11 h-11 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl active:scale-95 text-base">-</button>
-              <input type="number" id="inputMati" value="6" min="0" oninput="recalc()" class="flex-1 h-11 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-slate-900 text-lg focus:bg-white focus:outline-none focus:border-[#3B5166] tabular-nums">
+              <input type="number" id="inputMati" value="0" min="0" oninput="recalc()" class="flex-1 h-11 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-slate-900 text-lg focus:bg-white focus:outline-none focus:border-[#3B5166] tabular-nums">
               <button type="button" onclick="adjustMati(1)" class="w-11 h-11 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl active:scale-95 text-base">+</button>
             </div>
           </div>
@@ -559,15 +559,15 @@
             </div>
             <div class="grid grid-cols-2 gap-2">
               <select id="inputJenisPakan" class="h-10 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-medium text-slate-800 focus:outline-none">
-                <option value="BP-1 (Starter)">BP-1 (Starter)</option>
-                <option value="B11A (Grower)" selected>B11A (Grower)</option>
+                <option value="BP-1 (Starter)" selected>BP-1 (Starter)</option>
+                <option value="B11A (Grower)">B11A (Grower)</option>
                 <option value="B12 (Finisher)">B12 (Finisher)</option>
               </select>
-              <input type="number" id="inputPakan" value="350" min="0" step="any" oninput="recalc()" class="h-10 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-slate-900 text-sm focus:outline-none tabular-nums">
+              <input type="number" id="inputPakan" placeholder="0" min="0" step="any" oninput="recalc()" class="h-10 bg-slate-50 border border-slate-200 rounded-xl text-center font-bold text-slate-900 text-sm focus:outline-none tabular-nums">
             </div>
             <div class="flex justify-between text-[11px] text-slate-500 pt-1">
               <span>Feed Intake (FI):</span>
-              <span class="font-bold text-slate-800 tabular-nums" id="dispFI">79.9 g/ekor</span>
+              <span class="font-bold text-slate-800 tabular-nums" id="dispFI">0 g/ekor</span>
             </div>
           </div>
 
@@ -589,7 +589,7 @@
               <span>Catatan Lapangan / Kondisi Ayam</span>
               <span class="text-[10px] text-slate-400 font-normal">Opsional</span>
             </label>
-            <textarea id="inputCatatanHarian" rows="2" placeholder="Tulis kondisi sekam, suhu, blower, obat/vitamin..." oninput="updateCatatanLive(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#3B5166] resize-none leading-relaxed">Kondisi sekam kering, ayam lincah, suhu exhaust fan stabil 28°C.</textarea>
+            <textarea id="inputCatatanHarian" rows="2" placeholder="Tulis kondisi sekam, suhu, blower, obat/vitamin..." oninput="updateCatatanLive(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#3B5166] resize-none leading-relaxed"></textarea>
           </div>
 
           <!-- ACTION BUTTONS: DUA OPSI SIMPAN UNTUK MEMPERMUDAH SIMULASI SIKLUS -->
@@ -607,12 +607,12 @@
         <div id="sectionOwnerAudit" class="hidden bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs space-y-4">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div>
-              <h4 class="text-xs sm:text-sm font-bold text-slate-900" id="ownerAuditUmurTitle">Laporan Masuk H-16</h4>
-              <p class="text-[11px] text-slate-500 mt-0.5">Penjaga: <strong id="ownerViewOperatorName" class="text-slate-800">Budi Santoso</strong> (<span id="ownerViewOperatorWA" class="font-mono text-slate-600">081234567890</span>)</p>
+              <h4 class="text-xs sm:text-sm font-bold text-slate-900" id="ownerAuditUmurTitle">Laporan Harian</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">Penjaga: <strong id="ownerViewOperatorName" class="text-slate-800">-</strong> (<span id="ownerViewOperatorWA" class="font-mono text-slate-600">-</span>)</p>
             </div>
             <div class="flex items-center gap-1">
               <button onclick="stepUmur(-1)" class="w-6 h-6 bg-slate-100 rounded text-slate-700 text-xs font-bold">◀</button>
-              <span class="text-xs font-bold text-slate-800" id="ownerAuditUmurPickerBadge">H-16</span>
+              <span class="text-xs font-bold text-slate-800" id="ownerAuditUmurPickerBadge">H-1</span>
               <button onclick="stepUmur(1)" class="w-6 h-6 bg-slate-100 rounded text-slate-700 text-xs font-bold">▶</button>
             </div>
           </div>
@@ -620,29 +620,29 @@
           <div class="grid grid-cols-2 gap-2 text-xs">
             <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-xl">
               <span class="text-[10px] text-slate-400 block">Kematian Hari Ini</span>
-              <span class="text-base font-bold text-slate-900" id="ownerViewMati">6 Ekor</span>
-              <span class="text-[10px] text-emerald-700 block mt-0.5" id="ownerViewMortalitas">● Mortalitas 0.14% (Aman)</span>
+              <span class="text-base font-bold text-slate-900" id="ownerViewMati">-</span>
+              <span class="text-[10px] text-slate-500 block mt-0.5" id="ownerViewMortalitas">● Belum diinput operator</span>
             </div>
             <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-xl">
               <span class="text-[10px] text-slate-400 block">Pakan Digunakan</span>
-              <span class="text-base font-bold text-slate-900" id="ownerViewPakan">350 Kg (B11A)</span>
-              <span class="text-[10px] text-slate-500 block mt-0.5" id="ownerViewPakanSak">Setara 7.0 Sak (@50kg)</span>
+              <span class="text-base font-bold text-slate-900" id="ownerViewPakan">-</span>
+              <span class="text-[10px] text-slate-500 block mt-0.5" id="ownerViewPakanSak">-</span>
             </div>
             <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-xl">
               <span class="text-[10px] text-slate-400 block">Feed Intake (FI)</span>
-              <span class="text-base font-bold text-slate-900" id="ownerViewFI">79.9 g/ekor</span>
-              <span class="text-[10px] text-emerald-700 block mt-0.5">● Sesuai Standar</span>
+              <span class="text-base font-bold text-slate-900" id="ownerViewFI">-</span>
+              <span class="text-[10px] text-slate-400 block mt-0.5">-</span>
             </div>
             <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-xl">
               <span class="text-[10px] text-slate-400 block">Sisa Stok Gudang</span>
-              <span class="text-base font-bold text-amber-700" id="ownerViewSisaStok">1.245 Kg</span>
-              <span class="text-[10px] text-slate-500 block mt-0.5" id="ownerViewSisaStokSak">24.9 Sak</span>
+              <span class="text-base font-bold text-amber-700" id="ownerViewSisaStok">0 Kg</span>
+              <span class="text-[10px] text-slate-500 block mt-0.5" id="ownerViewSisaStokSak">0 Sak</span>
             </div>
           </div>
 
           <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
             <span class="text-[10px] text-slate-400 block font-semibold mb-0.5">Catatan Penjaga Lapangan:</span>
-            <p class="text-[11px] text-slate-700 italic" id="ownerViewCatatan">"Kondisi sekam kering, ayam lincah, suhu exhaust fan stabil 28°C."</p>
+            <p class="text-[11px] text-slate-700 italic" id="ownerViewCatatan">"Belum ada catatan."</p>
           </div>
 
           <div class="grid grid-cols-2 gap-2 pt-1">
@@ -663,7 +663,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-sm font-bold text-slate-900">Daftar Kelolaan Kandang</h3>
-            <p class="text-[11px] text-slate-500" id="kandangSubSummary">Total: 1 Kandang Aktif</p>
+            <p class="text-[11px] text-slate-500" id="kandangSubSummary">Status: Bersih (Belum Ada Flok Berjalan)</p>
           </div>
           <button id="btnTambahKandangInScreen" onclick="openModalTambahKandang()" class="hidden text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1.5 rounded-xl">
             🏢 + Gedung Baru
@@ -677,25 +677,25 @@
               <div>
                 <div class="flex items-center gap-2">
                   <h4 class="text-sm font-bold text-slate-900">Kandang 01</h4>
-                  <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full" id="kandang01StatusTag">Flok #4 Aktif</span>
+                  <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full" id="kandang01StatusTag">Kosong (Belum Chick-in)</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-0.5">Closed House • Kapasitas: 5.000 ekor</p>
               </div>
-              <span class="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg" id="kandang01UmurTag">Hari ke-16</span>
+              <span class="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg" id="kandang01UmurTag">Hari ke-0</span>
             </div>
 
             <div class="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-center text-xs">
               <div>
                 <span class="text-[10px] text-slate-400 block">Sisa Ayam</span>
-                <span class="font-bold text-slate-800" id="kandang01PopulasiTag">4.205 ekor</span>
+                <span class="font-bold text-slate-800" id="kandang01PopulasiTag">0 ekor</span>
               </div>
               <div>
                 <span class="text-[10px] text-slate-400 block">FCR Terkini</span>
-                <span class="font-bold text-emerald-700" id="kandang01FCRTag">1.08</span>
+                <span class="font-bold text-emerald-700" id="kandang01FCRTag">-</span>
               </div>
               <div>
                 <span class="text-[10px] text-slate-400 block">Operator</span>
-                <span class="font-bold text-slate-800" id="kandang01PenjagaTag">Budi</span>
+                <span class="font-bold text-slate-800" id="kandang01PenjagaTag">-</span>
               </div>
             </div>
 
@@ -725,7 +725,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-sm font-bold text-slate-900">Lembar Rekapitulasi Flok (Audit Kertas)</h3>
-            <p class="text-[11px] text-slate-500">Kandang 01 • <strong id="rekapFlokInfo">Flok #4 (DOC: 5 Okt 2024)</strong></p>
+            <p class="text-[11px] text-slate-500">Kandang 01 • <strong id="rekapFlokInfo">Kandang Bersih (Belum Ada Flok Aktif)</strong></p>
           </div>
           <button onclick="window.print()" class="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1">
             🖨️ Cetak / PDF
@@ -826,11 +826,11 @@
         <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-2xl bg-[#3B5166] text-white flex items-center justify-center font-bold text-base shadow-xs" id="akunAvatar">
-              BD
+              --
             </div>
             <div>
-              <h4 class="text-sm font-bold text-slate-900" id="akunNamaUser">Budi Santoso</h4>
-              <p class="text-xs text-slate-500" id="akunRoleDesc">Pekerja Lapangan (WA: 081234567890)</p>
+              <h4 class="text-sm font-bold text-slate-900" id="akunNamaUser">-</h4>
+              <p class="text-xs text-slate-500" id="akunRoleDesc">-</p>
             </div>
           </div>
           <!-- Tombol Switch Role Cepat & Edit Kredensial di Menu Akun -->
@@ -927,10 +927,22 @@
               </div>
             </div>
 
-            <!-- Opsi 2: Cloud Sync Realtime Otomatis (Firebase Free Tier) -->
+            <!-- Opsi 2: Bersihkan Data Siklus Flok (Mulai dari Nol) -->
+            <div class="p-3 rounded-xl bg-rose-50/70 border border-rose-200/80 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-rose-950 block text-xs">2. Reset Data Siklus Flok (Mulai dari Nol)</span>
+                <span class="text-[9px] bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded">Owner Only</span>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-tight">Bersihkan semua catatan harian dan siklus flok agar kandang kosong bersih untuk memulai Chick-in Flok #1 baru.</p>
+              <button type="button" onclick="resetSiklusFlokKeAwal()" class="w-full py-2 bg-white hover:bg-rose-50 text-rose-700 hover:text-rose-900 border border-rose-200 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
+                <span>🧹</span> <span>Bersihkan Semua Data Flok (Mulai dari Awal)</span>
+              </button>
+            </div>
+
+            <!-- Opsi 3: Cloud Sync Realtime Otomatis (Firebase Free Tier) -->
             <div class="p-3 rounded-xl bg-sky-50 border border-sky-200 space-y-2">
               <div class="flex items-center justify-between">
-                <span class="font-bold text-sky-950 block text-xs">2. Sinkronisasi Cloud Realtime (Otomatis)</span>
+                <span class="font-bold text-sky-950 block text-xs">3. Sinkronisasi Cloud Realtime (Otomatis)</span>
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" id="chkCloudSync" onchange="toggleCloudSync(this.checked)" class="sr-only peer">
                   <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
@@ -1007,7 +1019,7 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Nomor Flok</label>
-            <input type="number" id="inputFlokNumber" value="5" min="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800">
+            <input type="number" id="inputFlokNumber" value="1" min="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800">
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Tanggal DOC Masuk</label>
@@ -1344,15 +1356,15 @@
       <div class="grid grid-cols-2 gap-2 text-xs">
         <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
           <span class="text-[10px] text-slate-400 block">Populasi Awal</span>
-          <span class="font-bold text-slate-800 text-sm" id="hasilPanenPopAwal">4.500 Ekor</span>
+          <span class="font-bold text-slate-800 text-sm" id="hasilPanenPopAwal">0 Ekor</span>
         </div>
         <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
           <span class="text-[10px] text-slate-400 block">Total Ekor Terpanen</span>
-          <span class="font-bold text-slate-800 text-sm" id="hasilPanenTotalEkor">4.280 Ekor</span>
+          <span class="font-bold text-slate-800 text-sm" id="hasilPanenTotalEkor">0 Ekor</span>
         </div>
         <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
           <span class="text-[10px] text-slate-400 block">Total Tonase Panen</span>
-          <span class="font-bold text-slate-800 text-sm" id="hasilPanenTotalKg">8.845 Kg</span>
+          <span class="font-bold text-slate-800 text-sm" id="hasilPanenTotalKg">0 Kg</span>
         </div>
         <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
           <span class="text-[10px] text-slate-400 block">Bobot Rata-rata</span>

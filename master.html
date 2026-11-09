@@ -327,6 +327,19 @@
               Ganti Passcode Master (Gua)
             </button>
           </div>
+
+          <!-- Reset Flok Data Dummy -->
+          <div class="col-span-1 sm:col-span-2 bg-master-900/80 border border-slate-800 rounded-2xl p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <span>🧹</span> <span>Pembersihan Data Kandang (Reset ke Nol)</span>
+              </h4>
+              <button type="button" onclick="masterResetFlokData()" class="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[11px] font-bold border border-rose-500/30 transition-all flex items-center gap-1">
+                <span>🧹</span> <span>Bersihkan Semua Data Siklus</span>
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-400">Menghapus seluruh siklus flok dan catatan harian agar aplikasi 100% kosong & bersih, siap digunakan Owner untuk Chick-in baru dari Hari ke-1.</p>
+          </div>
         </div>
 
       </div>
@@ -841,6 +854,13 @@
       await FlokioDB.saveSetting('master_passcode', masterPasscode);
       localStorage.setItem('flokio_master_passcode', masterPasscode);
       alert('✅ Kunci Master Developer BERHASIL DIPERBARUI! Harap ingat kunci baru ini.');
+    }
+
+    // ================= RESET DATA KANDANG (BERSIH DARI DATA DUMMY) =================
+    async function masterResetFlokData() {
+      if (!confirm('⚠️ Anda yakin ingin MENGHAPUS SEMUA DATA SIKLUS FLOK & CATATAN HARIAN di database?\n\nKandang akan direset menjadi bersih (0 flok, 0 log). Akun Owner TIDAK akan terhapus.')) return;
+      await FlokioDB.resetAllFlokAndLogs();
+      alert('✅ Semua data siklus dan catatan harian berhasil dibersihkan! Kandang sekarang 100% kosong & bersih.');
     }
 
     function escapeHtml(str) {
