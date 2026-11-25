@@ -59,12 +59,15 @@
             <span>📊</span> <span>Lembar Rekap Kertas</span>
           </button>
           <button onclick="navigateTo('akun')" id="sideNavAkun" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-white font-medium text-left transition-all">
-            <span>⚙️</span> <span>Akun & PIN</span>
+            <span>👥</span> <span>Tim Anak Kandang (Maks 3)</span>
           </button>
 
           <!-- Menu Owner Tambahan di Sidebar (Eksklusif Owner) -->
           <div id="sideOwnerGroup" class="hidden pt-3 border-t border-slate-200 space-y-1">
             <span class="text-[10px] font-bold tracking-wider uppercase text-slate-400 px-3 block mb-1">Wewenang Owner</span>
+            <button onclick="openModalTambahAnakKandang()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sky-800 bg-sky-50 hover:bg-sky-100 font-bold border border-sky-200/80 text-left transition-colors">
+              <span>👥</span> <span>+ Buat Akun Anak Kandang</span>
+            </button>
             <button onclick="openModalChickin()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 font-bold border border-emerald-200/80 text-left transition-colors">
               <span>🐣</span> <span>Mulai Chick-in Baru</span>
             </button>
@@ -462,6 +465,30 @@
             </div>
           </div>
           <span class="text-slate-400 text-sm font-bold">›</span>
+        </div>
+
+        <!-- KARTU MANAJEMEN TIM ANAK KANDANG DI BERANDA (EKSKLUSIF OWNER - MAKS. 3 AKUN) -->
+        <div id="berandaCardTimAK" class="hidden bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-sm">👥</div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="text-xs sm:text-sm font-bold text-slate-900">Tim Anak Kandang (Maks. 3 Akun)</h4>
+                  <span id="berandaBadgeSlotAK" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+                    0 / 3 Akun Terpakai
+                  </span>
+                </div>
+                <p class="text-[10px] text-slate-500">Wewenang Owner: Daftarkan & pantau akun login petugas lapangan kandang</p>
+              </div>
+            </div>
+            <button type="button" onclick="openModalTambahAnakKandang()" class="px-3.5 py-2 bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+              <span>➕</span> <span>Buat Akun Anak Kandang</span>
+            </button>
+          </div>
+          <div id="berandaListAK" class="space-y-1.5 text-xs">
+            <!-- Di-generate dinamis oleh js/app.js -->
+          </div>
         </div>
 
         <!-- KARTU STATUS SUDAH DISIMPAN (UNTUK HARI AKTIF) -->
@@ -1504,6 +1531,10 @@
         <div>
           <label class="block font-bold text-slate-700 mb-1">Nama Lengkap Petugas</label>
           <input type="text" id="inputTambahNamaAK" placeholder="Contoh: Asep Sunandar" class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">User ID / Username (Opsional, untuk Login)</label>
+          <input type="text" id="inputTambahUserAK" placeholder="Contoh: asep (tidak peka huruf kapital)" class="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 font-semibold text-slate-800 focus:outline-none focus:border-[#3B5166]">
         </div>
         <div>
           <label class="block font-bold text-slate-700 mb-1">No. WhatsApp Aktif (Untuk Login)</label>

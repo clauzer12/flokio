@@ -846,6 +846,70 @@ async function promptGantiMasterPasscode() {
 }
 
 // 2. MANAJEMEN TIM ANAK KANDANG (DIKELOLA OWNER, MAKSIMAL 3 AKUN)
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function renderBerandaAnakKandangList() {
+  const container = document.getElementById('berandaListAK');
+  const badge = document.getElementById('berandaBadgeSlotAK');
+  if (!container) return;
+
+  const list = (await FlokioDB.getSetting('anak_kandang_list')) || [];
+  const count = list.length;
+  const max = 3;
+
+  if (badge) {
+    badge.innerText = `${count} / ${max} Akun ${count >= max ? '(Penuh)' : 'Terpakai'}`;
+    badge.className = count >= max 
+      ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200'
+      : 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200';
+  }
+
+  if (count === 0) {
+    container.innerHTML = `
+      <div class="p-3 text-center text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-xl space-y-1">
+        <p class="font-bold text-slate-700">Belum ada akun anak kandang yang dibuat.</p>
+        <p class="text-[11px] text-slate-400">Klik tombol <strong>"➕ Buat Akun Anak Kandang"</strong> di atas untuk mendaftarkan akun petugas (maksimal 3 akun).</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  list.forEach((ak) => {
+    const initial = ak.nama.substring(0, 2).toUpperCase();
+    const kandangLabel = ak.kandang_id === 'k02' ? 'Kandang 02' : 'Kandang 01';
+    html += `
+      <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-800 font-bold flex items-center justify-center text-xs">
+            ${initial}
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <strong class="text-slate-900 font-bold text-xs">${escapeHtml(ak.nama)}</strong>
+              ${ak.user ? `<span class="text-[10px] text-slate-500 font-medium">(@${escapeHtml(ak.user)})</span>` : ''}
+              <span class="text-[9px] bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-slate-700 font-bold">PIN: ${escapeHtml(ak.pin)}</span>
+            </div>
+            <p class="text-[10px] text-slate-500">WA: <span class="font-mono">${escapeHtml(ak.wa)}</span> • ${kandangLabel}</p>
+          </div>
+        </div>
+        <button type="button" onclick="deleteAnakKandang('${ak.id}')" class="text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2 py-1 rounded-lg text-xs font-bold transition-colors border border-rose-200/60" title="Hapus akun anak kandang">
+          🗑️ Hapus
+        </button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
 async function renderManajemenAnakKandang() {
   const listContainer = document.getElementById('listAnakKandang');
   const badgeSlot = document.getElementById('badgeSlotAnakKandang');
@@ -895,10 +959,11 @@ async function renderManajemenAnakKandang() {
           </div>
           <div>
             <div class="flex items-center gap-1.5">
-              <strong class="text-slate-900">${ak.nama}</strong>
-              <span class="text-[9px] bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-slate-700 font-bold">PIN: ${ak.pin}</span>
+              <strong class="text-slate-900">${escapeHtml(ak.nama)}</strong>
+              ${ak.user ? `<span class="text-[10px] text-slate-500 font-medium">(@${escapeHtml(ak.user)})</span>` : ''}
+              <span class="text-[9px] bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-slate-700 font-bold">PIN: ${escapeHtml(ak.pin)}</span>
             </div>
-            <p class="text-[10px] text-slate-500">WA: ${ak.wa} • Tugas: ${ak.kandang_id === 'k01' ? 'Kandang 01' : 'Kandang 02'}</p>
+            <p class="text-[10px] text-slate-500">WA: ${escapeHtml(ak.wa)} • Tugas: ${ak.kandang_id === 'k02' ? 'Kandang 02' : 'Kandang 01'}</p>
           </div>
         </div>
         <button type="button" onclick="deleteAnakKandang('${ak.id}')" class="text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2 py-1 rounded-lg text-xs font-bold transition-colors border border-rose-200/60" title="Hapus akun anak kandang">
@@ -921,6 +986,7 @@ async function openModalTambahAnakKandang() {
   if (sub) sub.innerText = `Slot tersisa: ${3 - list.length} dari 3 akun`;
 
   if (document.getElementById('inputTambahNamaAK')) document.getElementById('inputTambahNamaAK').value = '';
+  if (document.getElementById('inputTambahUserAK')) document.getElementById('inputTambahUserAK').value = '';
   if (document.getElementById('inputTambahWAAK')) document.getElementById('inputTambahWAAK').value = '';
   if (document.getElementById('inputTambahPinAK')) document.getElementById('inputTambahPinAK').value = '';
 
@@ -942,6 +1008,7 @@ async function submitTambahAnakKandang() {
   }
 
   const nama = document.getElementById('inputTambahNamaAK')?.value.trim();
+  const userInput = (document.getElementById('inputTambahUserAK')?.value || '').trim();
   const wa = document.getElementById('inputTambahWAAK')?.value.trim();
   const kandangId = document.getElementById('inputTambahKandangAK')?.value || 'k01';
   const pin = document.getElementById('inputTambahPinAK')?.value.trim();
@@ -964,9 +1031,12 @@ async function submitTambahAnakKandang() {
     return;
   }
 
+  const cleanUser = userInput ? userInput.toLowerCase() : nama.replace(/\s+/g, '').toLowerCase();
+
   const newAK = {
     id: `ak_${Date.now()}`,
     nama: nama,
+    user: cleanUser,
     wa: wa,
     kandang_id: kandangId,
     pin: pin,
@@ -979,6 +1049,7 @@ async function submitTambahAnakKandang() {
 
   closeModalTambahAnakKandang();
   await renderManajemenAnakKandang();
+  await renderBerandaAnakKandangList();
   renderLoginQuickAccess();
   showToast(`Akun Petugas "${nama}" Berhasil Dibuat (Slot ${list.length}/3)!`);
 }
@@ -995,6 +1066,7 @@ async function deleteAnakKandang(id) {
   await FlokioDB.saveSetting('anak_kandang_list', list);
 
   await renderManajemenAnakKandang();
+  await renderBerandaAnakKandangList();
   renderLoginQuickAccess();
   showToast(`Akun "${target.nama}" berhasil dihapus. 1 slot kembali tersedia.`);
 }
@@ -1145,6 +1217,12 @@ function setRole(role) {
     if (sideOwnerGroup) sideOwnerGroup.classList.remove('hidden');
     if (btnTambahKandang) btnTambahKandang.classList.remove('hidden');
 
+    const berandaCardAK = document.getElementById('berandaCardTimAK');
+    if (berandaCardAK) {
+      berandaCardAK.classList.remove('hidden');
+      renderBerandaAnakKandangList();
+    }
+
     const optK2 = document.getElementById('optKandang2Tablet');
     if (optK2) optK2.disabled = false;
 
@@ -1161,6 +1239,8 @@ function setRole(role) {
     // Sembunyikan View Owner
     if (cardOwner) cardOwner.classList.add('hidden');
     if (ownerAudit) ownerAudit.classList.add('hidden');
+    const berandaCardAK = document.getElementById('berandaCardTimAK');
+    if (berandaCardAK) berandaCardAK.classList.add('hidden');
     if (btnRekapHome) {
       btnRekapHome.classList.add('hidden');
       btnRekapHome.classList.remove('flex');
@@ -1359,22 +1439,39 @@ function renderAllViews() {
 
     const rFlokInfo = document.getElementById('rekapFlokInfo');
     if (rFlokInfo) rFlokInfo.innerText = 'Kandang Bersih (Belum Ada Flok Aktif)';
+
+    const berandaCardAK = document.getElementById('berandaCardTimAK');
+    if (currentRole === 'owner') {
+      if (berandaCardAK) {
+        berandaCardAK.classList.remove('hidden');
+        renderBerandaAnakKandangList();
+      }
+    } else {
+      if (berandaCardAK) berandaCardAK.classList.add('hidden');
+    }
+
     renderRekapTable();
     return;
   }
 
   // Jika ada activeFlok
   if (cardEmpty) cardEmpty.classList.add('hidden');
+  const berandaCardAK = document.getElementById('berandaCardTimAK');
   if (currentRole === 'owner') {
     if (cardOwner) cardOwner.classList.remove('hidden');
     if (cardKandang) cardKandang.classList.add('hidden');
     if (ownerAudit) ownerAudit.classList.remove('hidden');
     if (formInput) formInput.classList.add('hidden');
+    if (berandaCardAK) {
+      berandaCardAK.classList.remove('hidden');
+      renderBerandaAnakKandangList();
+    }
   } else {
     if (cardOwner) cardOwner.classList.add('hidden');
     if (cardKandang) cardKandang.classList.remove('hidden');
     if (ownerAudit) ownerAudit.classList.add('hidden');
     if (formInput) formInput.classList.remove('hidden');
+    if (berandaCardAK) berandaCardAK.classList.add('hidden');
   }
 
   const metrics = computeFlokMetrics(activeFlok, dailyLogs);
