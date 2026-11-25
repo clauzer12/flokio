@@ -1073,25 +1073,8 @@ function handleLogout() {
 }
 
 async function toggleActiveRole() {
-  if (currentRole === 'kandang') {
-    // Meminta PIN Owner untuk proteksi keamanan wewenang
-    const owner = await FlokioDB.getSetting('owner_account');
-    const inputPin = prompt('Masukkan PIN Master Owner untuk beralih mode (4-8 digit):');
-    if (!inputPin) return;
-    if (owner && inputPin === owner.pin) {
-      setRole('owner');
-      showToast(`Beralih Mode ke: 👑 Owner (${owner.nama})`);
-    } else {
-      alert('PIN Owner Salah! Akses ditolak.');
-    }
-  } else {
-    // Dari Owner beralih ke Anak Kandang
-    const akList = (await FlokioDB.getSetting('anak_kandang_list')) || [];
-    if (akList.length > 0) {
-      currentPenjaga = akList[0];
-    }
-    setRole('kandang');
-    showToast(`Beralih Mode ke: 👷 Anak Kandang (${currentPenjaga.nama})`);
+  if (confirm('Untuk berpindah peran, Anda harus keluar dan login menggunakan akun yang dituju.\n\nKeluar sekarang ke layar login?')) {
+    handleLogout();
   }
 }
 

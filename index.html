@@ -98,13 +98,8 @@
       <!-- TOP APP HEADER (SAAT DALAM APLIKASI) -->
       <header id="mainTopHeader" class="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between sticky top-0 z-20">
         <div class="flex items-center gap-2">
-          <!-- Role Indicator Badge -->
-          <span class="text-xs font-bold text-slate-900" id="topHeaderBadge">👷 Budi (Penjaga)</span>
-          <!-- Role Switcher Quick Pill (Mudah Uji Coba) -->
-          <div class="inline-flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px]">
-            <button id="btnRoleKandang" onclick="setRole('kandang')" class="px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs transition-all">👷 Anak Kandang</button>
-            <button id="btnRoleOwner" onclick="setRole('owner')" class="px-2 py-0.5 rounded font-medium text-slate-500 hover:text-slate-900 transition-all">👑 Owner</button>
-          </div>
+          <!-- Role Indicator Badge (Terkunci Sesuai Akun Login) -->
+          <span class="text-xs font-bold text-slate-900" id="topHeaderBadge">👑 Pak Haji (Owner)</span>
         </div>
 
         <div class="flex items-center gap-1.5 sm:gap-2">
@@ -833,10 +828,10 @@
               <p class="text-xs text-slate-500" id="akunRoleDesc">-</p>
             </div>
           </div>
-          <!-- Tombol Switch Role Cepat & Edit Kredensial di Menu Akun -->
+          <!-- Tombol Keluar / Ganti Akun di Menu Akun -->
           <div class="text-right flex flex-col items-end gap-1">
-            <button onclick="toggleActiveRole()" class="text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-xl hover:bg-sky-100 transition-colors">
-              Ganti ke <span id="akunBtnSwitchTarget">Owner</span>
+            <button onclick="handleLogout()" class="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl hover:bg-rose-100 transition-colors flex items-center gap-1">
+              🚪 <span>Ganti Akun</span>
             </button>
             <button type="button" id="btnAkunMasterPortal" onclick="openMasterAuthModal()" class="text-[10px] text-slate-400 hover:text-slate-800 underline">
               🛡️ Dashboard Master (Gua)
