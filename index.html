@@ -59,7 +59,7 @@
             <span>📊</span> <span>Lembar Rekap Kertas</span>
           </button>
           <button onclick="navigateTo('akun')" id="sideNavAkun" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-white font-medium text-left transition-all">
-            <span>👥</span> <span>Tim Anak Kandang (Maks 3)</span>
+            <span>⚙️</span> <span>Akun & PIN</span>
           </button>
 
           <!-- Menu Owner Tambahan di Sidebar (Eksklusif Owner) -->
@@ -78,7 +78,7 @@
               <span>⚖️</span> <span>Pencatatan Panen (IP)</span>
             </button>
             <button onclick="openModalTambahKandang()" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:bg-white font-medium text-left transition-colors">
-              <span>🏢</span> <span>Tambah Master Gedung</span>
+              <span>🏢</span> <span>Tambah Kandang</span>
             </button>
           </div>
         </nav>
@@ -102,7 +102,7 @@
       <header id="mainTopHeader" class="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between sticky top-0 z-20">
         <div class="flex items-center gap-2">
           <!-- Role Indicator Badge (Terkunci Sesuai Akun Login) -->
-          <span class="text-xs font-bold text-slate-900" id="topHeaderBadge">👑 Pak Haji (Owner)</span>
+          <span class="text-xs font-bold text-slate-900" id="topHeaderBadge">👑 Owner</span>
         </div>
 
         <div class="flex items-center gap-1.5 sm:gap-2">
@@ -447,7 +447,7 @@
             🐣
           </div>
           <div>
-            <h4 class="text-sm font-bold text-slate-800">Kandang 01 Bersih (Belum Ada Flok Aktif)</h4>
+            <h4 class="text-sm font-bold text-slate-800" id="cardFlokEmptyStateTitle">Kandang Bersih (Belum Ada Flok Aktif)</h4>
             <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">Data kandang masih bersih dan belum ada siklus pemeliharaan berjalan. Silakan mulai siklus baru dari awal (Hari ke-1 DOC).</p>
           </div>
           <button onclick="openModalChickin()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all">
@@ -687,56 +687,13 @@
             <h3 class="text-sm font-bold text-slate-900">Daftar Kelolaan Kandang</h3>
             <p class="text-[11px] text-slate-500" id="kandangSubSummary">Status: Bersih (Belum Ada Flok Berjalan)</p>
           </div>
-          <button id="btnTambahKandangInScreen" onclick="openModalTambahKandang()" class="hidden text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1.5 rounded-xl">
-            🏢 + Gedung Baru
+          <button id="btnTambahKandangInScreen" onclick="openModalTambahKandang()" class="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1.5 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5">
+            <span>➕</span> <span>Tambah Kandang</span>
           </button>
         </div>
 
-        <div class="space-y-3">
-          <!-- Kandang 01 Card -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
-            <div class="flex items-start justify-between">
-              <div>
-                <div class="flex items-center gap-2">
-                  <h4 class="text-sm font-bold text-slate-900">Kandang 01</h4>
-                  <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full" id="kandang01StatusTag">Kosong (Belum Chick-in)</span>
-                </div>
-                <p class="text-xs text-slate-500 mt-0.5">Closed House • Kapasitas: 5.000 ekor</p>
-              </div>
-              <span class="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg" id="kandang01UmurTag">Hari ke-0</span>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-center text-xs">
-              <div>
-                <span class="text-[10px] text-slate-400 block">Sisa Ayam</span>
-                <span class="font-bold text-slate-800" id="kandang01PopulasiTag">0 ekor</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 block">FCR Terkini</span>
-                <span class="font-bold text-emerald-700" id="kandang01FCRTag">-</span>
-              </div>
-              <div>
-                <span class="text-[10px] text-slate-400 block">Operator</span>
-                <span class="font-bold text-slate-800" id="kandang01PenjagaTag">-</span>
-              </div>
-            </div>
-
-            <div class="flex gap-2">
-              <button onclick="navigateTo('beranda')" class="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5">
-                <span>📝</span> Buka Lembar Kerja
-              </button>
-              <button onclick="openModalPanen()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-colors">
-                ⚖️ Panen
-              </button>
-            </div>
-          </div>
-
-          <!-- Kandang 02 Card -->
-          <div class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-4 text-center space-y-2">
-            <span class="text-2xl block">🏢</span>
-            <h4 class="text-xs font-bold text-slate-700">Kandang 02 (Persiapan Flok Baru)</h4>
-            <p class="text-[11px] text-slate-500 max-w-xs mx-auto">Kandang dalam pembersihan & disinfeksi pasca panen flok sebelumnya.</p>
-          </div>
+        <div id="kandangListContainer" class="space-y-3">
+          <!-- Dinamis: Di-render via renderKandangScreen() -->
         </div>
       </section>
 
@@ -1449,26 +1406,26 @@
     </div>
   </div>
 
-  <!-- ================= MODAL TAMBAH MASTER GEDUNG KANDANG ================= -->
+  <!-- ================= MODAL TAMBAH KANDANG ================= -->
   <div id="modalTambahKandang" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden fade-in">
     <div class="bg-white rounded-2xl max-w-sm w-full p-4 space-y-3 shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-        <h3 class="text-sm font-bold text-slate-800">Daftarkan Gedung Kandang Baru</h3>
+        <h3 class="text-sm font-bold text-slate-800">Tambah Kandang Baru</h3>
         <button onclick="closeModalTambahKandang()" class="text-slate-400 hover:text-slate-700 text-lg">×</button>
       </div>
       <div class="space-y-2 text-xs">
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Nama Gedung</label>
-          <input type="text" id="inputNewKandangName" value="Kandang 03" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold">
+          <label class="block font-semibold text-slate-700 mb-1">Nama Gedung Kandang</label>
+          <input type="text" id="inputNewKandangName" placeholder="Contoh: Kandang 01" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold focus:outline-none focus:border-[#3B5166]">
         </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Kapasitas Maksimal (Ekor)</label>
-          <input type="number" id="inputNewKandangKap" value="6000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold">
+          <input type="number" id="inputNewKandangKap" value="5000" placeholder="5000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold focus:outline-none focus:border-[#3B5166]">
         </div>
       </div>
       <div class="flex gap-2 pt-2">
         <button onclick="submitTambahKandang()" class="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-colors">
-          Simpan Master Gedung
+          Simpan Kandang
         </button>
         <button onclick="closeModalTambahKandang()" class="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">
           Batal

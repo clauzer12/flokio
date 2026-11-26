@@ -22,6 +22,13 @@ let currentPenjaga = {
   wa: ''
 };
 
+let currentOwner = {
+  nama: 'Indra',
+  farm: 'Peternakan',
+  user: 'indra',
+  wa: ''
+};
+
 // ================= SESI PENGGUNA (PERSISTENCE ANTI-LOGOUT REFRESH) =================
 const SESSION_KEY = 'flokio_user_session';
 const DEVICE_MODE_KEY = 'flokio_device_mode';
@@ -238,6 +245,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 4. Render Views & Sinkronisasi Indikator Layout
   updateDeviceButtonsUI();
+  await renderKandangDropdowns();
+  await renderKandangScreen();
   renderAllViews();
   selectUmur(currentInputUmur);
   renderLoginQuickAccess();
@@ -258,7 +267,19 @@ async function reloadAppData() {
   // 1. Bersihkan flok dummy legacy jika ada
   await FlokioDB.cleanLegacyDummyFlok();
 
-  activeFlok = await FlokioDB.getActiveFlokByKandang(activeKandangId);
+  // 2. Sinkronkan dropdown kandang
+  await renderKandangDropdowns();
+
+  if (!activeKandangId) {
+    const allK = await FlokioDB.getAllKandang();
+    if (allK && allK.length > 0) activeKandangId = allK[0].id;
+  }
+
+  if (activeKandangId) {
+    activeFlok = await FlokioDB.getActiveFlokByKandang(activeKandangId);
+  } else {
+    activeFlok = null;
+  }
 
   // Jika flok yang ditemukan adalah data dummy Cobb 500 / flok_k01_4, bersihkan total!
   if (activeFlok && (activeFlok.id === 'flok_k01_4' || activeFlok.tanggal_chickin === '2024-10-05')) {
@@ -328,6 +349,7 @@ function navigateTo(screenName) {
     renderAllViews();
   } else if (screenName === 'kandang') {
     document.getElementById('screenKandang').classList.remove('hidden');
+    renderKandangScreen();
     renderAllViews();
   } else if (screenName === 'rekap') {
     // ROUTE GUARD: Lembar Rekap Fisik eksklusif untuk Owner
@@ -438,6 +460,13 @@ async function ensureAuthData() {
         akList = cleanedAK;
         await FlokioDB.saveSetting('anak_kandang_list', akList);
       }
+    }
+
+    const savedOwner = await FlokioDB.getSetting('owner_account');
+    if (savedOwner && savedOwner.nama) {
+      currentOwner = savedOwner;
+    } else if (ownerList && ownerList.length > 0) {
+      currentOwner = ownerList[0];
     }
   } catch (e) {
     console.warn('[Auth] Gagal inisialisasi akun:', e);
@@ -598,6 +627,7 @@ async function submitLogin(role) {
       return;
     }
 
+    currentOwner = matchedOwner;
     await FlokioDB.saveSetting('owner_account', matchedOwner);
     saveSession('owner', 'beranda');
     setRole('owner');
@@ -1226,10 +1256,13 @@ function setRole(role) {
     const optK2 = document.getElementById('optKandang2Tablet');
     if (optK2) optK2.disabled = false;
 
-    if (topBadge) topBadge.innerText = '👑 Pak Haji (Owner)';
+    const ownerName = (currentOwner && currentOwner.nama) ? currentOwner.nama : 'Owner';
+    const farmName = (currentOwner && currentOwner.farm) ? currentOwner.farm : 'Pemilik Peternakan';
+
+    if (topBadge) topBadge.innerText = `👑 ${ownerName} (Owner)`;
     if (sidebarRoleTag) sidebarRoleTag.innerText = 'Mode: Owner / Mandor';
-    if (sidebarUserLabel) sidebarUserLabel.innerText = 'Pak Haji (Owner)';
-    if (sidebarSubLabel) sidebarSubLabel.innerText = 'Pemilik Peternakan';
+    if (sidebarUserLabel) sidebarUserLabel.innerText = `${ownerName} (Owner)`;
+    if (sidebarSubLabel) sidebarSubLabel.innerText = farmName;
 
   } else {
     // Mode Anak Kandang
@@ -1624,10 +1657,10 @@ async function renderAkunView() {
   const btnEditOwner = document.getElementById('btnAkunEditOwner');
 
   if (currentRole === 'owner') {
-    const owner = await FlokioDB.getSetting('owner_account');
-    const ownerName = owner ? owner.nama : 'Pak Haji Rahmat (Owner)';
+    const owner = (currentOwner && currentOwner.nama) ? currentOwner : await FlokioDB.getSetting('owner_account');
+    const ownerName = owner ? owner.nama : 'Owner';
     const initials = ownerName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    if (avatar) avatar.innerText = initials || 'HR';
+    if (avatar) avatar.innerText = initials || 'OW';
     if (nama) nama.innerText = ownerName;
     if (desc) desc.innerText = `Akses Penuh: Manajemen Flok, Audit Panen & Tim Kandang (WA: ${owner ? owner.wa : '-'})`;
     if (targetLabel) targetLabel.innerText = 'Anak Kandang';
@@ -2170,11 +2203,15 @@ function previewWA() {
   const catatan = log ? log.catatan : (document.getElementById('inputCatatanHarian')?.value || 'Aman terkendali.');
   const tglStr = formatIndoDate(log ? log.tanggal : addDaysToDateStr(activeFlok.tanggal_chickin, currentInputUmur - 1));
 
+  const kandangObj = activeKandangId ? await FlokioDB.getKandang(activeKandangId) : null;
+  const kandangName = kandangObj ? kandangObj.nama : 'Kandang';
+  const ownerName = (currentOwner && currentOwner.nama) ? currentOwner.nama : 'Owner';
+
   const txt =
 `*LAPORAN HARIAN RECORDING BROILER — FLOKIO*
-Kandang     : Kandang 01 (Flok #${activeFlok.nomor_flok})
+Kandang     : ${kandangName} (Flok #${activeFlok.nomor_flok})
 Umur / Tgl  : Hari ke-${currentInputUmur} (${tglStr})
-Pelapor     : ${currentRole === 'owner' ? 'Pak Haji (Owner)' : (currentPenjaga.nama + ' (Penjaga)')}
+Pelapor     : ${currentRole === 'owner' ? (ownerName + ' (Owner)') : (currentPenjaga.nama + ' (Penjaga)')}
 ----------------------------------------
 • Kematian/Afkir : ${mati} ekor
 • Pakan Pakai    : ${pakanKg} kg (${jenis})
@@ -2250,7 +2287,12 @@ function applyPresetStdToEdit(preset) {
 
 // ================= MODAL EDIT TARGET STANDAR =================
 function openModalEditStandar() {
-  if (!activeFlok) return;
+  if (!activeFlok) {
+    if (confirm('⚠️ Belum Ada Flok Aktif!\n\nTarget Standar Mingguan (Bobot Standar & FCR Standar Minggu 1 - 4) ditentukan dan dikunci saat Anda memulai Chick-in Flok.\n\nApakah Anda ingin membuka formulir Chick-in Flok Baru sekarang?')) {
+      openModalChickin();
+    }
+    return;
+  }
   const std = activeFlok.standar_mingguan || {
     m1: { umur: 7, std_bw_gram: 185, std_fcr: 0.90 },
     m2: { umur: 14, std_bw_gram: 475, std_fcr: 1.18 },
@@ -2431,7 +2473,10 @@ async function resetSiklusFlokKeAwal() {
 
 // ================= MODAL PANEN & INDEKS PERFORMA (IP) =================
 function openModalPanen() {
-  if (!activeFlok) return;
+  if (!activeFlok) {
+    alert('⚠️ Belum Ada Flok Aktif!\n\nPencatatan Panen (IP) hanya dapat dilakukan pada flok yang sedang berjalan.\n\nSilakan mulai siklus pemeliharaan dengan Chick-in Flok terlebih dahulu.');
+    return;
+  }
 
   const metrics = computeFlokMetrics(activeFlok, dailyLogs);
   const todayStr = new Date().toISOString().split('T')[0];
@@ -2668,23 +2713,40 @@ function copyHasilPanenWA() {
 }
 
 // ================= MASTER GEDUNG KANDANG =================
-function onSelectKandang(kandangId) {
+async function onSelectKandang(kandangId) {
+  if (!kandangId) return;
   activeKandangId = kandangId;
-  showToast(`Beralih ke Gedung ${kandangId === 'k01' ? 'Kandang 01' : 'Kandang 02'}`);
+  const k = await FlokioDB.getKandang(kandangId);
+  const kName = k ? k.nama : 'Kandang';
+  const sTablet = document.getElementById('selectKandangTablet');
+  if (sTablet) sTablet.value = kandangId;
+  activeFlok = await FlokioDB.getActiveFlokByKandang(activeKandangId);
+  if (activeFlok) {
+    dailyLogs = await FlokioDB.getDailyLogsByFlok(activeFlok.id);
+  } else {
+    dailyLogs = [];
+  }
+  renderAllViews();
+  setRole(currentRole);
+  showToast(`Beralih ke Gedung ${kName}`);
 }
 
 function openModalTambahKandang() {
-  document.getElementById('modalTambahKandang').classList.remove('hidden');
+  const modal = document.getElementById('modalTambahKandang');
+  if (modal) modal.classList.remove('hidden');
 }
 
 function closeModalTambahKandang() {
-  document.getElementById('modalTambahKandang').classList.add('hidden');
+  const modal = document.getElementById('modalTambahKandang');
+  if (modal) modal.classList.add('hidden');
 }
 
 async function submitTambahKandang() {
-  const name = document.getElementById('inputNewKandangName').value.trim() || 'Kandang 03';
-  const kap = parseInt(document.getElementById('inputNewKandangKap').value) || 5000;
-  const newId = 'k' + (Date.now().toString().slice(-3));
+  const nameInput = document.getElementById('inputNewKandangName');
+  const kapInput = document.getElementById('inputNewKandangKap');
+  const name = (nameInput?.value || '').trim() || 'Kandang 01';
+  const kap = parseInt(kapInput?.value) || 5000;
+  const newId = 'k_' + Date.now();
 
   await FlokioDB.saveKandang({
     id: newId,
@@ -2696,8 +2758,156 @@ async function submitTambahKandang() {
     operator_wa: ''
   });
 
+  if (!activeKandangId) activeKandangId = newId;
+
+  if (nameInput) nameInput.value = '';
+  if (kapInput) kapInput.value = '5000';
   closeModalTambahKandang();
-  showToast(`Gedung ${name} Berhasil Didaftarkan!`);
+
+  await renderKandangScreen();
+  await renderKandangDropdowns();
+  renderAllViews();
+  showToast(`Kandang "${name}" Berhasil Ditambahkan!`);
+}
+
+async function hapusKandang(id) {
+  const k = await FlokioDB.getKandang(id);
+  const name = k ? k.nama : 'Kandang';
+  if (!confirm(`Apakah Anda yakin ingin menghapus "${name}"?\nData gedung ini akan dihapus dari sistem.`)) return;
+
+  await FlokioDB.deleteKandang(id);
+  const all = await FlokioDB.getAllKandang();
+  if (activeKandangId === id) {
+    activeKandangId = all.length > 0 ? all[0].id : null;
+  }
+  await renderKandangScreen();
+  await renderKandangDropdowns();
+  renderAllViews();
+  showToast(`Gedung "${name}" berhasil dihapus.`);
+}
+
+async function renderKandangScreen() {
+  const container = document.getElementById('kandangListContainer');
+  const summary = document.getElementById('kandangSubSummary');
+  if (!container) return;
+
+  const list = (await FlokioDB.getAllKandang()) || [];
+  if (summary) {
+    summary.innerText = list.length === 0 ? 'Status: Bersih (Belum Ada Kandang Terdaftar)' : `Total: ${list.length} Kandang Terdaftar`;
+  }
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-8 text-center space-y-3">
+        <span class="text-3xl block">🏢</span>
+        <h4 class="text-sm font-bold text-slate-800">Belum Ada Kandang Terdaftar</h4>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto">Akun Owner Anda baru dibuat. Belum ada data gedung kandang. Klik tombol <strong>"+ Tambah Kandang"</strong> di bawah atau di pojok kanan atas untuk mendaftarkan gedung kandang pertama Anda.</p>
+        <button type="button" onclick="openModalTambahKandang()" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+          <span>➕</span> Tambah Kandang Pertama
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  for (const k of list) {
+    const flok = await FlokioDB.getActiveFlokByKandang(k.id);
+    const isKosong = !flok || flok.status_siklus === 'panen';
+    const umur = flok ? (flok.umur_terakhir || (flok.tanggal_doc_in ? hitungUmurDOC(flok.tanggal_doc_in) : 0)) : 0;
+    const logs = flok ? (await FlokioDB.getDailyLogsByFlok(flok.id)) : [];
+    const metrics = flok ? computeFlokMetrics(flok, logs) : null;
+    const popSisa = metrics ? metrics.sisaAyam : (flok ? flok.populasi_awal : 0);
+    const fcr = metrics && metrics.fcrAktual > 0 ? metrics.fcrAktual.toFixed(3) : '-';
+
+    html += `
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="text-sm font-bold text-slate-900">${escapeHtml(k.nama)}</h4>
+              <span class="text-[10px] ${isKosong ? 'bg-slate-100 text-slate-600' : 'bg-emerald-100 text-emerald-800'} font-bold px-2 py-0.5 rounded-full">
+                ${isKosong ? 'Kosong (Belum Chick-in)' : `Flok #${flok.nomor_flok} Aktif`}
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(k.tipe || 'Closed House')} • Kapasitas: ${Number(k.kapasitas || 5000).toLocaleString('id-ID')} ekor</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">Hari ke-${umur}</span>
+            <button onclick="hapusKandang('${escapeHtml(k.id)}')" class="text-rose-500 hover:text-rose-700 p-1 text-xs hover:bg-rose-50 rounded-lg transition-colors" title="Hapus gedung kandang ini">🗑️</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-center text-xs">
+          <div>
+            <span class="text-[10px] text-slate-400 block">Sisa Ayam</span>
+            <span class="font-bold text-slate-800">${Number(popSisa).toLocaleString('id-ID')} ekor</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">FCR Terkini</span>
+            <span class="font-bold text-emerald-700">${fcr}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 block">Operator</span>
+            <span class="font-bold text-slate-800">${escapeHtml(k.operator_default || '-')}</span>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="onSelectKandang('${escapeHtml(k.id)}'); navigateTo('beranda');" class="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5">
+            <span>📝</span> Buka Lembar Kerja
+          </button>
+          ${isKosong ? `
+            <button onclick="onSelectKandang('${escapeHtml(k.id)}'); openModalChickin();" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-1">
+              <span>🐣</span> Chick-in
+            </button>
+          ` : `
+            <button onclick="onSelectKandang('${escapeHtml(k.id)}'); openModalPanen();" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-colors flex items-center gap-1">
+              <span>⚖️</span> Panen
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+async function renderKandangDropdowns() {
+  const kandangs = (await FlokioDB.getAllKandang()) || [];
+  const sTablet = document.getElementById('selectKandangTablet');
+  const sLogin = document.getElementById('loginKandangSelect');
+  const sModalAK = document.getElementById('inputTambahKandangAK');
+
+  let optsHtml = '';
+  if (kandangs.length === 0) {
+    optsHtml = '<option value="">(Belum Ada Kandang Terdaftar)</option>';
+  } else {
+    optsHtml = kandangs.map(k => `<option value="${escapeHtml(k.id)}">🏢 ${escapeHtml(k.nama)} (${escapeHtml(k.tipe || 'Closed House')})</option>`).join('');
+  }
+
+  if (sTablet) {
+    sTablet.innerHTML = optsHtml;
+    if (activeKandangId && kandangs.some(k => k.id === activeKandangId)) {
+      sTablet.value = activeKandangId;
+    } else if (kandangs.length > 0) {
+      activeKandangId = kandangs[0].id;
+      sTablet.value = activeKandangId;
+    } else {
+      activeKandangId = null;
+    }
+  }
+
+  if (sLogin) {
+    sLogin.innerHTML = optsHtml;
+    if (activeKandangId && kandangs.some(k => k.id === activeKandangId)) {
+      sLogin.value = activeKandangId;
+    }
+  }
+
+  if (sModalAK) {
+    sModalAK.innerHTML = optsHtml;
+  }
 }
 
 // ================= EKSPOR & IMPOR DATA (SINKRONISASI OFFLINE) =================

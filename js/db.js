@@ -57,44 +57,24 @@ function openDB() {
 
 // Inisialisasi data bawaan jika pertama kali dibuka
 async function seedInitialData(db) {
-  const count = await countRecords(db, 'kandang');
-  if (count > 0) return; // Sudah terisi data sebelumnya
-
-  console.log('[IndexedDB] Menyiapkan struktur kandang bersih (Tanpa data dummy)...');
-
-  // Master Kandang Bersih (Status kosong, siap untuk Chick-in baru)
-  await putRecord(db, 'kandang', {
-    id: 'k01',
-    nama: 'Kandang 01',
-    tipe: 'Closed House',
-    kapasitas: 5000,
-    status: 'kosong',
-    operator_default: '-',
-    operator_wa: ''
-  });
-
-  await putRecord(db, 'kandang', {
-    id: 'k02',
-    nama: 'Kandang 02',
-    tipe: 'Closed House',
-    kapasitas: 5000,
-    status: 'kosong',
-    operator_default: '-',
-    operator_wa: ''
-  });
-
   // Kunci Akses Dashboard Khusus Master Developer (Hanya diketahui oleh "Gua")
-  await putRecord(db, 'settings', {
-    key: 'master_passcode',
-    _val: 'masterflokio'
-  });
+  const masterPass = await getRecord(db, 'settings', 'master_passcode');
+  if (!masterPass) {
+    await putRecord(db, 'settings', {
+      key: 'master_passcode',
+      _val: 'masterflokio'
+    });
+  }
 
   // Daftar Akun Owner Sah (Hanya dapat dibuat di Dashboard Khusus oleh "Gua")
   // Awalnya KOSONG. Akun Owner HANYA BISA DIGUNAKAN jika sudah dibuat oleh Master Developer di Dashboard Khusus.
-  await putRecord(db, 'settings', {
-    key: 'owner_accounts_list',
-    _val: []
-  });
+  const ownerList = await getRecord(db, 'settings', 'owner_accounts_list');
+  if (!ownerList) {
+    await putRecord(db, 'settings', {
+      key: 'owner_accounts_list',
+      _val: []
+    });
+  }
 
   // Pointer Akun Owner Aktif (Kosong saat awal sebelum login)
   await putRecord(db, 'settings', {
@@ -255,6 +235,14 @@ window.FlokioDB = {
     const db = await openDB();
     return getAllRecords(db, 'kandang');
   },
+  deleteKandang: async (id) => {
+    const db = await openDB();
+    return deleteRecord(db, 'kandang', id);
+  },
+  clearAllKandang: async () => {
+    const db = await openDB();
+    return clearStore(db, 'kandang');
+  },
 
   // Settings
   saveSetting: async (key, value) => {
@@ -277,10 +265,11 @@ window.FlokioDB = {
     const db = await openDB();
     await clearStore(db, 'flok');
     await clearStore(db, 'catatan_harian');
-    const k1 = await getRecord(db, 'kandang', 'k01');
-    if (k1) { k1.status = 'kosong'; await putRecord(db, 'kandang', k1); }
-    const k2 = await getRecord(db, 'kandang', 'k02');
-    if (k2) { k2.status = 'kosong'; await putRecord(db, 'kandang', k2); }
+    const kandangs = await getAllRecords(db, 'kandang');
+    for (const k of kandangs) {
+      k.status = 'kosong';
+      await putRecord(db, 'kandang', k);
+    }
     return true;
   },
 
@@ -293,9 +282,19 @@ window.FlokioDB = {
         console.log('[FlokioDB] Membersihkan data dummy bawaan (flok_k01_4)...');
         await clearStore(db, 'flok');
         await clearStore(db, 'catatan_harian');
-        const k1 = await getRecord(db, 'kandang', 'k01');
-        if (k1) { k1.status = 'kosong'; await putRecord(db, 'kandang', k1); }
+        await clearStore(db, 'kandang');
       }
+
+      // Bersihkan kandang k01/k02 legacy jika belum ada flok riil
+      const kandangList = await getAllRecords(db, 'kandang');
+      if (floks.length === 0 && kandangList.some(k => k.id === 'k01' || k.id === 'k02')) {
+        for (const k of kandangList) {
+          if (k.id === 'k01' || k.id === 'k02') {
+            await deleteRecord(db, 'kandang', k.id);
+          }
+        }
+      }
+
       const penjaga = await getRecord(db, 'settings', 'current_penjaga');
       if (penjaga && (penjaga.nama === 'Budi Santoso' || (penjaga._val && penjaga._val.nama === 'Budi Santoso'))) {
         await deleteRecord(db, 'settings', 'current_penjaga');
