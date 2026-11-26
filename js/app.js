@@ -2189,7 +2189,7 @@ function renderRekapTable() {
 }
 
 // ================= WHATSAPP REPORT GENERATOR =================
-function previewWA() {
+async function previewWA() {
   if (!activeFlok) return;
 
   const metrics = computeFlokMetrics(activeFlok, dailyLogs);
