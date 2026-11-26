@@ -1101,72 +1101,12 @@ async function deleteAnakKandang(id) {
   showToast(`Akun "${target.nama}" berhasil dihapus. 1 slot kembali tersedia.`);
 }
 
-// 3. RENDER QUICK ACCESS / AKUN TERDAFTAR DI HALAMAN LOGIN
+// 3. KEAMANAN LOGIN (Privasi Akun Terlindungi)
 async function renderLoginQuickAccess() {
-  const container = document.getElementById('loginQuickAccessContainer');
-  if (!container) return;
-
-  const ownersList = (await FlokioDB.getSetting('owner_accounts_list')) || [];
-  const akList = (await FlokioDB.getSetting('anak_kandang_list')) || [];
-
-  const activeOwners = Array.isArray(ownersList) ? ownersList.filter(o => o.aktif !== false) : [];
-  const activeAK = Array.isArray(akList) ? akList.filter(a => a.aktif !== false) : [];
-
-  if (activeOwners.length === 0 && activeAK.length === 0) {
-    container.innerHTML = `
-      <div class="col-span-2 p-3 bg-amber-50/90 border border-amber-200 rounded-2xl text-center space-y-1">
-        <span class="text-[11px] font-bold text-amber-900 block">⚠️ Belum Ada Akun Owner Resmi</span>
-        <span class="text-[10px] text-amber-700 block leading-tight">
-          Akun Owner hanya dapat dibuat & diotorisasi oleh Master Developer (Gua) melalui Dashboard Khusus.
-        </span>
-        <div class="pt-1">
-          <a href="master.html" class="inline-flex items-center gap-1 text-[11px] font-extrabold text-blue-700 hover:text-blue-900 underline">
-            <span>🛡️ Buka Dashboard Master Developer →</span>
-          </a>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  let html = '';
-  // Akun Owner Sah yang telah dibuat oleh Gua
-  activeOwners.forEach(owner => {
-    html += `
-      <button type="button" onclick="selectLoginAccount('owner', '${owner.user || owner.wa}', '${owner.pin}')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all text-left">
-        <span class="text-xs font-bold text-slate-800 block">👨‍💼 ${owner.nama.split(' ')[0]} (Owner)</span>
-        <span class="text-[10px] text-slate-500 font-mono">User: ${owner.user || owner.wa}</span>
-      </button>
-    `;
-  });
-
-  // Akun Anak Kandang (Maks 3 akun terdaftar)
-  activeAK.forEach(ak => {
-    html += `
-      <button type="button" onclick="selectLoginAccount('kandang', '${ak.wa}', '${ak.pin}')" class="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all text-left">
-        <span class="text-xs font-bold text-slate-800 block">👷 ${ak.nama.split(' ')[0]}</span>
-        <span class="text-[10px] text-slate-500 font-mono">Kandang ${ak.kandang_id || '01'}</span>
-      </button>
-    `;
-  });
-
-  container.innerHTML = html;
+  // Dinonaktifkan: Demi privasi & keamanan, daftar akun tidak ditampilkan di publik agar tidak dapat disalahgunakan
 }
 
-function selectLoginAccount(role, userOrWA, pin) {
-  switchLoginTab(role);
-  if (role === 'kandang') {
-    const inputWA = document.getElementById('loginOperatorWA');
-    const inputPIN = document.getElementById('loginPinKandang');
-    if (inputWA) inputWA.value = userOrWA;
-    if (inputPIN) inputPIN.value = pin;
-  } else {
-    const inputUser = document.getElementById('loginOwnerUser');
-    const inputPass = document.getElementById('loginOwnerPass');
-    if (inputUser) inputUser.value = userOrWA;
-    if (inputPass) inputPass.value = pin;
-  }
-}
+function selectLoginAccount() {}
 
 function handleLogout() {
   clearSession();
