@@ -2128,6 +2128,307 @@ function renderRekapTable() {
   }
 }
 
+// ================= PRINT & PDF AUDIT RECORD WORKFLOW (OPSI C) =================
+async function openModalPrintChoice() {
+  if (!activeFlok) {
+    showToast('⚠️ Belum ada flok aktif untuk dicetak. Lakukan Chick-in terlebih dahulu!');
+    return;
+  }
+  const modal = document.getElementById('modalPrintChoice');
+  const title = document.getElementById('printChoiceCurrentTitle');
+  const desc = document.getElementById('printChoiceCurrentDesc');
+  if (title) title.innerText = `Cetak Minggu Ini Saja (M${currentWeekTab})`;
+  const startDay = ((currentWeekTab - 1) * 7) + 1;
+  const endDay = currentWeekTab * 7;
+  if (desc) desc.innerText = `Tabel audit Hari ke-${startDay} s.d. ${endDay} + target standar. Pas rapi di 1 lembar A4.`;
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeModalPrintChoice() {
+  const modal = document.getElementById('modalPrintChoice');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function populatePrintHeader(cakupanText) {
+  const owner = (currentOwner && currentOwner.nama) ? currentOwner : await FlokioDB.getSetting('owner_account');
+  const ownerName = owner ? owner.nama : 'Indra (Owner)';
+
+  let kandangName = 'Kandang 01';
+  if (activeKandangId) {
+    const k = await FlokioDB.getKandangById(activeKandangId);
+    if (k && k.nama) kandangName = k.nama;
+  }
+
+  const metaOwner = document.getElementById('printMetaOwner');
+  const metaKandang = document.getElementById('printMetaKandang');
+  const metaFlok = document.getElementById('printMetaFlok');
+  const metaDOC = document.getElementById('printMetaDOC');
+  const metaPopulasi = document.getElementById('printMetaPopulasi');
+  const metaCakupan = document.getElementById('printMetaCakupan');
+  const metaTime = document.getElementById('printMetaPrintTime');
+  const signAK = document.getElementById('printSignAKName');
+  const signOwner = document.getElementById('printSignOwnerName');
+
+  if (metaOwner) metaOwner.innerText = ownerName;
+  if (metaKandang) metaKandang.innerText = kandangName;
+  if (metaFlok) metaFlok.innerText = activeFlok ? (activeFlok.nama_flok || `Flok #${activeFlok.nomor_flok || activeFlok.id}`) : '-';
+  if (metaDOC) metaDOC.innerText = activeFlok ? formatIndoDate(activeFlok.tanggal_chickin) : '-';
+  if (metaPopulasi) metaPopulasi.innerText = activeFlok ? `${Number(activeFlok.populasi_awal).toLocaleString('id-ID')} Ekor` : '-';
+  if (metaCakupan) metaCakupan.innerText = cakupanText;
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  if (metaTime) metaTime.innerText = `Dicetak: ${dateStr} • ${timeStr}`;
+
+  // Nama anak kandang penanggung jawab di tanda tangan
+  try {
+    const allAK = await FlokioDB.getAnakKandangList();
+    const assignedAK = (allAK || []).find(a => a.kandang_id === activeKandangId);
+    if (signAK) {
+      signAK.innerText = assignedAK ? `( ${assignedAK.nama} )` : '( .................................................. )';
+    }
+  } catch (_) {
+    if (signAK) signAK.innerText = '( .................................................. )';
+  }
+  if (signOwner) {
+    signOwner.innerText = `( ${ownerName} )`;
+  }
+}
+
+function generatePrintAllContent() {
+  const container = document.getElementById('rekapPrintAllContainer');
+  if (!container || !activeFlok) return;
+
+  const metrics = computeFlokMetrics(activeFlok, dailyLogs);
+  const dayRecords = metrics.dayRecords;
+
+  let allWeeksHtml = '';
+
+  for (let w = 1; w <= 5; w++) {
+    const startDay = ((w - 1) * 7) + 1;
+    const endDay = w * 7;
+
+    let rowsHtml = '';
+    let sumPakai = 0;
+    let sumMasuk = 0;
+    let sumMati = 0;
+    let fiCount = 0;
+    let sumFI = 0;
+    let lastBW = '-';
+    let lastSisaEkor = metrics.populasiAwal;
+
+    for (let d = startDay; d <= endDay; d++) {
+      const r = dayRecords[d - 1];
+      if (!r) continue;
+
+      if (r.hasLog) {
+        sumPakai += r.pakanPakaiKg;
+        sumMasuk += r.pakanMasukKg;
+        sumMati += Number(r.mati) || 0;
+        if (r.fi !== '-') {
+          sumFI += parseFloat(r.fi);
+          fiCount++;
+        }
+        if (r.bw !== '-') lastBW = r.bw;
+      }
+      lastSisaEkor = r.sisaAyam;
+
+      const shortDate = formatDateShort(r.tanggal);
+      const isCheckpointDay = d === 7 || d === 14 || d === 21 || d === 28;
+
+      let bwDisplay = r.bw;
+      if (isCheckpointDay && activeFlok.standar_mingguan) {
+        const wKey = 'm' + (d / 7);
+        const stdBW = activeFlok.standar_mingguan[wKey]?.std_bw_gram;
+        if (stdBW) {
+          if (r.bw !== '-') {
+            const diff = Number(r.bw) - stdBW;
+            bwDisplay = `<strong>${r.bw}</strong> (Std ${stdBW}g)`;
+          } else {
+            bwDisplay = `<span style="color:#64748b; font-style:italic;">Std: ${stdBW}g</span>`;
+          }
+        }
+      }
+
+      rowsHtml += `
+        <tr>
+          <td>${shortDate}</td>
+          <td><strong>${r.umur}</strong>${isCheckpointDay ? ` <span style="font-weight:bold; font-size:7pt;">🎯 M${d/7}</span>` : ''}</td>
+          <td>${r.jenisPakan ? r.jenisPakan.split(' ')[0] : '-'}</td>
+          <td>${r.pakanPakaiKg > 0 ? r.pakanPakaiKg : '-'}</td>
+          <td>${r.pakanMasukKg > 0 ? r.pakanMasukKg : '-'}</td>
+          <td>${r.sisaPakanKg.toLocaleString('id-ID')}</td>
+          <td>${r.fi}</td>
+          <td>${bwDisplay}</td>
+          <td style="${r.mati !== '-' && Number(r.mati) > 10 ? 'color:#b91c1c; font-weight:bold;' : ''}">${r.mati}</td>
+          <td style="font-weight:bold;">${r.sisaAyam.toLocaleString('id-ID')}</td>
+        </tr>
+      `;
+    }
+
+    const avgFI = fiCount > 0 ? (sumFI / fiCount).toFixed(1) : '-';
+
+    // Target Standar Row
+    let targetRowHtml = '';
+    if (w <= 4 && activeFlok.standar_mingguan) {
+      const weekKey = 'm' + w;
+      const targetUmur = w * 7;
+      const defBW = [185, 475, 1020, 1650][w - 1];
+      const defFCR = [0.90, 1.18, 1.38, 1.52][w - 1];
+      const weekStd = activeFlok.standar_mingguan[weekKey] || { umur: targetUmur, std_bw_gram: defBW, std_fcr: defFCR };
+      let actBWVal = lastBW !== '-' ? Number(lastBW) : null;
+      let diffSign = '';
+      if (actBWVal !== null) {
+        const diff = actBWVal - weekStd.std_bw_gram;
+        diffSign = diff >= 0 ? `+${diff}g` : `${diff}g`;
+      }
+
+      targetRowHtml = `
+        <tr style="background-color:#f0f9ff; font-weight:600; font-size:7.5pt;">
+          <td colspan="3" style="text-align:left; padding-left:6px; font-weight:bold;">🎯 Target Std M${w} (H-${targetUmur}):</td>
+          <td colspan="3" style="text-align:left; color:#334155;">
+            Std FCR: <strong>${Number(weekStd.std_fcr).toFixed(2)}</strong> (Aktual: <strong>${metrics.fcr}</strong>)
+          </td>
+          <td>-</td>
+          <td style="font-weight:bold;">
+            Std: ${weekStd.std_bw_gram}g
+            ${actBWVal ? `<br><span>Aktual: ${actBWVal}g (${diffSign})</span>` : ''}
+          </td>
+          <td colspan="2" style="text-align:center;">
+            ${actBWVal !== null ? (actBWVal >= weekStd.std_bw_gram ? '🟢 Target Tercapai' : '🟡 Di Bawah Target') : '⏳ Belum Sampling'}
+          </td>
+        </tr>
+      `;
+    }
+
+    allWeeksHtml += `
+      <div class="print-week-block">
+        <div style="background-color:#e2e8f0; border:1px solid #334155; border-bottom:none; padding:4px 8px; font-weight:bold; font-size:8pt; display:flex; justify-content:space-between;">
+          <span>📋 MINGGU ${w} (HARI KE-${startDay} s.d. ${endDay})</span>
+          <span>Target Evaluasi H-${w * 7}</span>
+        </div>
+        <table class="ledger-table print-ledger-table">
+          <thead>
+            <tr>
+              <th>Tgl</th>
+              <th>Umur</th>
+              <th>Jenis</th>
+              <th>Pakai (Kg)</th>
+              <th>Masuk (Kg)</th>
+              <th>Sisa Pakan</th>
+              <th>FI (g/ek)</th>
+              <th>BW (g)</th>
+              <th>Mati</th>
+              <th>Sisa Ekor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="text-align:left; padding-left:6px; font-weight:bold;">Total Minggu ${w}:</td>
+              <td style="font-weight:bold;">${sumPakai > 0 ? sumPakai.toLocaleString('id-ID') : '-'} Kg</td>
+              <td style="font-weight:bold;">${sumMasuk > 0 ? sumMasuk.toLocaleString('id-ID') : '-'} Kg</td>
+              <td>-</td>
+              <td>${avgFI} (avg)</td>
+              <td>${lastBW}</td>
+              <td style="color:#b91c1c; font-weight:bold;">${sumMati > 0 ? sumMati : '-'}</td>
+              <td style="font-weight:bold;">${lastSisaEkor.toLocaleString('id-ID')}</td>
+            </tr>
+            ${targetRowHtml}
+          </tfoot>
+        </table>
+      </div>
+    `;
+  }
+
+  // Ringkasan Akumulatif Siklus Berjalan
+  const summaryBoxHtml = `
+    <div class="print-summary-box" style="border:2px solid #1e293b; background-color:#f8fafc; padding:10px; margin-top:14px; border-radius:6px; font-size:8pt;">
+      <div style="font-weight:bold; text-align:center; text-transform:uppercase; border-bottom:1px solid #cbd5e1; padding-bottom:4px; margin-bottom:8px; font-size:9pt; letter-spacing:0.5px;">
+        RINGKASAN AKUMULATIF PERFORMA FLOK (SIKLUS BERJALAN)
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; text-align:center;">
+        <div style="background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:4px;">
+          <span style="display:block; color:#64748b; font-size:7pt;">Populasi Awal</span>
+          <strong style="font-size:9pt; color:#0f172a;">${metrics.populasiAwal.toLocaleString('id-ID')} Ekor</strong>
+        </div>
+        <div style="background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:4px;">
+          <span style="display:block; color:#64748b; font-size:7pt;">Sisa Ayam Hidup</span>
+          <strong style="font-size:9pt; color:#0f172a;">${metrics.sisaAyam.toLocaleString('id-ID')} Ekor</strong>
+        </div>
+        <div style="background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:4px;">
+          <span style="display:block; color:#64748b; font-size:7pt;">Total Mati / Deplesi</span>
+          <strong style="font-size:9pt; color:#b91c1c;">${metrics.totalMati} Ekor (${metrics.deplesiPersen}%)</strong>
+        </div>
+        <div style="background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:4px;">
+          <span style="display:block; color:#64748b; font-size:7pt;">Total Pakan Terpakai</span>
+          <strong style="font-size:9pt; color:#0f172a;">${metrics.totalPakanPakai.toLocaleString('id-ID')} Kg</strong>
+        </div>
+        <div style="background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:4px;">
+          <span style="display:block; color:#64748b; font-size:7pt;">Total Pakan Masuk</span>
+          <strong style="font-size:9pt; color:#0f172a;">${metrics.totalPakanMasuk.toLocaleString('id-ID')} Kg</strong>
+        </div>
+        <div style="background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:4px;">
+          <span style="display:block; color:#64748b; font-size:7pt;">Sisa Stok Pakan</span>
+          <strong style="font-size:9pt; color:#0f172a;">${metrics.sisaStokPakan.toLocaleString('id-ID')} Kg</strong>
+        </div>
+        <div style="background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:4px;">
+          <span style="display:block; color:#64748b; font-size:7pt;">Bobot Sampling (BW)</span>
+          <strong style="font-size:9pt; color:#0f172a;">${metrics.latestBW} gram</strong>
+        </div>
+        <div style="background:#fff; border:1px solid #cbd5e1; padding:6px; border-radius:4px;">
+          <span style="display:block; color:#64748b; font-size:7pt;">FCR Sementara</span>
+          <strong style="font-size:9pt; color:#0f172a;">${metrics.fcr}</strong>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = allWeeksHtml + summaryBoxHtml;
+}
+
+async function executePrint(scope) {
+  closeModalPrintChoice();
+
+  if (!activeFlok) {
+    showToast('⚠️ Belum ada flok aktif untuk dicetak.');
+    return;
+  }
+
+  if (scope === 'current') {
+    const startDay = ((currentWeekTab - 1) * 7) + 1;
+    const endDay = currentWeekTab * 7;
+    await populatePrintHeader(`Minggu ke-${currentWeekTab} (Hari ke-${startDay} s.d. ${endDay})`);
+    document.body.setAttribute('data-print-mode', 'current');
+  } else {
+    await populatePrintHeader('Seluruh Siklus (Minggu 1 s.d. 5 / Hari 1 s.d. 35)');
+    generatePrintAllContent();
+    document.body.setAttribute('data-print-mode', 'all');
+  }
+
+  // Berikan jeda sejenak untuk rendering layout A4 sebelum browser print preview muncul
+  setTimeout(() => {
+    window.print();
+  }, 200);
+}
+
+// Reset data-print-mode setelah dialog print ditutup
+window.addEventListener('afterprint', () => {
+  document.body.removeAttribute('data-print-mode');
+});
+
+// Fallback jika browser tertentu tidak mendukung event afterprint
+window.addEventListener('focus', () => {
+  if (document.body.hasAttribute('data-print-mode')) {
+    setTimeout(() => {
+      document.body.removeAttribute('data-print-mode');
+    }, 500);
+  }
+});
+
 // ================= WHATSAPP REPORT GENERATOR =================
 async function previewWA() {
   if (!activeFlok) return;
