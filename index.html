@@ -691,18 +691,51 @@
       <!-- SCREEN 3: LEMBAR REKAP KERTAS (10 KOLOM FISIK - EKSKLUSIF OWNER - DINAMIS) -->
       <!-- ========================================================================= -->
       <section id="screenRekap" class="screen-view p-4 space-y-4 flex-1 hidden fade-in">
-        <div class="flex items-center justify-between">
+        <!-- HEADER WEB SCREEN (DISEMBUNYIKAN SAAT PRINT) -->
+        <div class="flex items-center justify-between no-print">
           <div>
             <h3 class="text-sm font-bold text-slate-900">Lembar Rekapitulasi Flok (Audit Kertas)</h3>
             <p class="text-[11px] text-slate-500">Kandang 01 • <strong id="rekapFlokInfo">Kandang Bersih (Belum Ada Flok Aktif)</strong></p>
           </div>
-          <button onclick="window.print()" class="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1">
+          <button onclick="openModalPrintChoice()" class="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1 active:scale-95 transition-all">
             🖨️ Cetak / PDF
           </button>
         </div>
 
-        <!-- RINGKASAN TARGET STANDAR 4 MINGGU (HASIL INPUT CHICK-IN OWNER) -->
-        <div class="bg-white border border-slate-200/90 rounded-2xl p-3 shadow-xs space-y-2.5">
+        <!-- ================= KOP RESMI CETAK FISIK / PDF (Hanya Tampil Saat Print) ================= -->
+        <div id="printOfficialHeader" class="hidden">
+          <div class="border-b-2 border-slate-900 pb-2 mb-3 flex items-start justify-between">
+            <div>
+              <h2 class="text-base font-extrabold text-slate-900 tracking-tight uppercase" style="letter-spacing: 0.5px;">
+                LEMBAR REKAPITULASI PEMELIHARAAN AYAM BROILER
+              </h2>
+              <p class="text-[11px] text-slate-600 font-medium">
+                Flokio Smart Farm Ledger • Sistem Pencatatan & Audit Produksi Kandang
+              </p>
+            </div>
+            <div class="text-right text-[10px] text-slate-500">
+              <div class="font-bold text-slate-800 text-[11px]">FLOKIO DOKUMEN AUDIT</div>
+              <div id="printMetaPrintTime">Dicetak: -</div>
+            </div>
+          </div>
+
+          <!-- Metadata Grid Ringkas 2 Kolom -->
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] border border-slate-400 rounded-lg p-2.5 mb-3 bg-slate-50">
+            <div class="space-y-0.5">
+              <div><span class="text-slate-500">Pemilik Farm / Owner:</span> <strong id="printMetaOwner" class="text-slate-900 font-bold">-</strong></div>
+              <div><span class="text-slate-500">Unit Kandang:</span> <strong id="printMetaKandang" class="text-slate-900 font-bold">-</strong></div>
+              <div><span class="text-slate-500">Flok / Siklus:</span> <strong id="printMetaFlok" class="text-slate-900 font-bold">-</strong></div>
+            </div>
+            <div class="space-y-0.5">
+              <div><span class="text-slate-500">Tanggal DOC-In:</span> <strong id="printMetaDOC" class="text-slate-900 font-bold">-</strong></div>
+              <div><span class="text-slate-500">Populasi Awal:</span> <strong id="printMetaPopulasi" class="text-slate-900 font-bold">-</strong></div>
+              <div><span class="text-slate-500">Cakupan Rekap:</span> <strong id="printMetaCakupan" class="text-slate-900 font-bold">-</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RINGKASAN TARGET STANDAR 4 MINGGU (HASIL INPUT CHICK-IN OWNER - DISEMBUNYIKAN SAAT PRINT) -->
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-3 shadow-xs space-y-2.5 no-print">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
               <span class="w-6 h-6 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-xs">🎯</span>
@@ -722,8 +755,8 @@
           </div>
         </div>
 
-        <!-- Weekly Tabs M1 - M5 -->
-        <div class="flex gap-1.5 overflow-x-auto pb-1 text-xs">
+        <!-- Weekly Tabs M1 - M5 (DISEMBUNYIKAN SAAT PRINT) -->
+        <div class="flex gap-1.5 overflow-x-auto pb-1 text-xs no-print">
           <button id="tabM1" onclick="switchWeek(1)" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 bg-white border border-slate-200">M1 (H1-7)</button>
           <button id="tabM2" onclick="switchWeek(2)" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#3B5166] text-white shadow-xs">M2 (H8-14)</button>
           <button id="tabM3" onclick="switchWeek(3)" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 bg-white border border-slate-200">M3 (H15-21)</button>
@@ -731,8 +764,8 @@
           <button id="tabM5" onclick="switchWeek(5)" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 bg-white border border-slate-200">M5 (H29-35)</button>
         </div>
 
-        <!-- BANNER KOMPARASI STANDAR VS REALISASI AKTUAL MINGGU AKTIF -->
-        <div id="rekapStdComparisonCard" class="bg-slate-50 border border-slate-200/90 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <!-- BANNER KOMPARASI STANDAR VS REALISASI AKTUAL MINGGU AKTIF (DISEMBUNYIKAN SAAT PRINT) -->
+        <div id="rekapStdComparisonCard" class="bg-slate-50 border border-slate-200/90 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs no-print">
           <div class="flex items-center gap-2">
             <span class="w-7 h-7 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-xs">🎯</span>
             <div>
@@ -750,8 +783,8 @@
           </div>
         </div>
 
-        <!-- TABEL REKAP 10 KOLOM FISIK DINAMIS -->
-        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+        <!-- TABEL REKAP 10 KOLOM FISIK DINAMIS (CARD MINGGU AKTIF) -->
+        <div id="rekapTableCard" class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
           <div class="overflow-x-auto">
             <table class="ledger-table">
               <thead>
@@ -778,8 +811,31 @@
           </div>
         </div>
 
-        <!-- Tombol Input Cepat dari Rekap -->
-        <div class="flex items-center justify-between text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <!-- CONTAINER PRINT SELURUH SIKLUS M1-M5 (Hanya Muncul Saat Print Seluruh Siklus) -->
+        <div id="rekapPrintAllContainer" class="hidden space-y-4">
+          <!-- Tabel seluruh minggu M1 s.d. M5 di-generate saat print seluruh siklus -->
+        </div>
+
+        <!-- ================= TANDA TANGAN AUDIT FISIK (Hanya Tampil Saat Print) ================= -->
+        <div id="printSignatureSection" class="hidden mt-6 pt-3 border-t border-slate-300">
+          <div class="grid grid-cols-2 text-center text-[10px] gap-8">
+            <div>
+              <p class="text-slate-700 font-semibold">Petugas Lapangan (Anak Kandang):</p>
+              <div class="h-14"></div>
+              <p class="font-bold text-slate-900 border-t border-slate-400 mx-8 pt-1" id="printSignAKName">( .................................................. )</p>
+              <p class="text-[9px] text-slate-500">Pelaksana Harian Kandang</p>
+            </div>
+            <div>
+              <p class="text-slate-700 font-semibold">Pemilik / Pengelola Farm (Owner):</p>
+              <div class="h-14"></div>
+              <p class="font-bold text-slate-900 border-t border-slate-400 mx-8 pt-1" id="printSignOwnerName">( Indra )</p>
+              <p class="text-[9px] text-slate-500">Owner & Verifikator Audit</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tombol Input Cepat dari Rekap (DISEMBUNYIKAN SAAT PRINT) -->
+        <div class="flex items-center justify-between text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200 no-print">
           <span>💡 <em>Baris biru muda menandakan umur yang sedang aktif dipilih.</em></span>
           <button onclick="navigateTo('beranda')" class="font-bold text-[#3B5166] hover:underline">
             Ke Form Input Harian →
@@ -1506,6 +1562,54 @@
           Buat Akun Petugas
         </button>
         <button type="button" onclick="closeModalTambahAnakKandang()" class="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL PILIHAN CETAK / PDF (OPSI C) ================= -->
+  <div id="modalPrintChoice" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden fade-in">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-sm">🖨️</span>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Cetak Lembar Rekap</h3>
+            <p class="text-[10px] text-slate-500">Pilih format cetak atau simpan ke PDF</p>
+          </div>
+        </div>
+        <button onclick="closeModalPrintChoice()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">×</button>
+      </div>
+
+      <div class="space-y-2.5">
+        <!-- Pilihan 1: Minggu Aktif Saja -->
+        <button type="button" onclick="executePrint('current')" class="w-full text-left p-3.5 rounded-2xl border-2 border-slate-200 hover:border-[#3B5166] hover:bg-slate-50 transition-all group flex items-start gap-3 active:scale-[0.98]">
+          <span class="w-9 h-9 rounded-xl bg-sky-50 text-sky-800 flex items-center justify-center font-bold text-base flex-shrink-0 group-hover:bg-[#3B5166] group-hover:text-white transition-colors">📄</span>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-900 group-hover:text-[#3B5166]" id="printChoiceCurrentTitle">Cetak Minggu Ini Saja</span>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">1 Lembar A4</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-0.5" id="printChoiceCurrentDesc">Tabel audit 1 minggu aktif + target standar. Pas rapi di 1 lembar A4.</p>
+          </div>
+        </button>
+
+        <!-- Pilihan 2: Seluruh Siklus M1 - M5 -->
+        <button type="button" onclick="executePrint('all')" class="w-full text-left p-3.5 rounded-2xl border-2 border-slate-200 hover:border-[#3B5166] hover:bg-slate-50 transition-all group flex items-start gap-3 active:scale-[0.98]">
+          <span class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-800 flex items-center justify-center font-bold text-base flex-shrink-0 group-hover:bg-[#3B5166] group-hover:text-white transition-colors">📑</span>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-900 group-hover:text-[#3B5166]">Cetak Rekap Seluruh Siklus</span>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-800">M1 – M5</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-0.5">Semua minggu (Hari 1–35) berurutan + ringkasan performa kumulatif.</p>
+          </div>
+        </button>
+      </div>
+
+      <div class="pt-2 border-t border-slate-100">
+        <button type="button" onclick="closeModalPrintChoice()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors">
           Batal
         </button>
       </div>
