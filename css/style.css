@@ -114,3 +114,156 @@ body {
 .active-press:active {
   transform: scale(0.97);
 }
+
+/* ========================================================================= */
+/* CSS PRINT STYLES - AUDIT PAPER RECORD (EKSKLUSIF HASIL CETAK REKAP A4)     */
+/* ========================================================================= */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 10mm 12mm;
+  }
+
+  /* Sembunyikan elemen UI website dan navigasi */
+  #sidebar,
+  #mainTopHeader,
+  #bottomNav,
+  #toast,
+  .no-print,
+  button,
+  [class*="backdrop-blur"],
+  .fixed,
+  .screen-view:not(#screenRekap),
+  #modalPrintChoice,
+  #modalWA,
+  #modalChickin,
+  #modalEditStandar,
+  #modalPanen,
+  #modalTambahKandang,
+  #modalTambahAnakKandang,
+  #modalMasterAuth {
+    display: none !important;
+  }
+
+  /* Reset container agar putih polos dan tidak ada scroll / bayangan */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 9.5pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #appShell,
+  main,
+  #screenRekap {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  /* Tampilkan Kop Dokumen Resmi dan Tanda Tangan */
+  #printOfficialHeader {
+    display: block !important;
+    margin-bottom: 12px !important;
+  }
+
+  #printSignatureSection {
+    display: block !important;
+    margin-top: 24px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Kontrol Tampilan Sesuai Pilihan Mode: Current vs All */
+  body[data-print-mode="current"] #rekapTableCard {
+    display: block !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body[data-print-mode="current"] #rekapPrintAllContainer {
+    display: none !important;
+  }
+
+  body[data-print-mode="all"] #rekapTableCard {
+    display: none !important;
+  }
+  body[data-print-mode="all"] #rekapPrintAllContainer {
+    display: block !important;
+  }
+
+  /* Tabel Cetak: Garis Tajam, Angka Rapi, Kontras Tinggi */
+  .ledger-table,
+  .print-ledger-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8pt !important;
+    margin-bottom: 10px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .ledger-table th,
+  .print-ledger-table th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    border: 1px solid #334155 !important;
+    padding: 5px 3px !important;
+    text-align: center !important;
+    font-size: 8pt !important;
+  }
+
+  .ledger-table td,
+  .print-ledger-table td {
+    border: 1px solid #475569 !important;
+    padding: 4px 3px !important;
+    color: #000000 !important;
+    text-align: center !important;
+    font-size: 8pt !important;
+  }
+
+  .ledger-table tfoot td,
+  .print-ledger-table tfoot td {
+    background-color: #f8fafc !important;
+    font-weight: 700 !important;
+    border: 1px solid #334155 !important;
+    padding: 5px 3px !important;
+  }
+
+  .today-row {
+    background-color: #ffffff !important;
+    font-weight: normal !important;
+  }
+
+  .print-week-block {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 14px !important;
+  }
+
+  .print-summary-box {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-page-break {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+}
